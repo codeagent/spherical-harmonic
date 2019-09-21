@@ -11,7 +11,7 @@
 #include "sampling.h"
 #include "CubeMap.h"
 
-namespace SH {
+namespace sh {
     template<class T>
     class CubeMapPolarFunction {
     protected:

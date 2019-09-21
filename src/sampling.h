@@ -13,7 +13,7 @@
 #include "CubeMap.h"
 #include "math.h"
 
-namespace SH {
+namespace sh {
 
     enum class SamplingMethod {
         Sphere,
@@ -80,24 +80,25 @@ namespace SH {
     T sampleBitmap(PixelArray <T> &bitmap, const glm::vec2 &uv, InterpolationMethod filtering) {
         auto w = bitmap.getWidth(), h = bitmap.getHeight();
         float x = uv.x * w, y = uv.y * h;
+        const float d = 1.0e-3f;
         Texel<T> q11;
-        q11.x = fmax(0.0f, floorf(x));
-        q11.y = fmax(0.0f, floorf(y));
+        q11.x = fmaxf(0.0f, floorf(x));
+        q11.y = fmaxf(0.0f, floorf(y));
         q11.value = bitmap[q11.y][q11.x];
 
         Texel<T> q12;
-        q12.x = fmax(0.0f, floorf(x));
-        q12.y = fmin(h - 1.0f, ceilf(y));
+        q12.x = fmaxf(0.0f, floorf(x));
+        q12.y = fminf(h - 1.0f, ceilf(y + d));
         q12.value = bitmap[q12.y][q12.x];
 
         Texel<T> q21;
-        q21.x = fmin(w - 1.0f, ceilf(x));
-        q21.y = fmax(0.0f, floorf(y));
+        q21.x = fminf(w - 1.0f, ceilf(x + d));
+        q21.y = fmaxf(0.0f, floorf(y));
         q21.value = bitmap[q21.y][q21.x];
 
         Texel<T> q22;
-        q22.x = fmin(w - 1.0f, ceilf(x));
-        q22.y = fmin(h - 1.0f, ceilf(y));
+        q22.x = fminf(w - 1.0f, ceilf(x + d));
+        q22.y = fminf(h - 1.0f, ceilf(y + d));
         q22.value = bitmap[q22.y][q22.x];
 
         if (filtering == InterpolationMethod::Nearst) {
@@ -125,7 +126,7 @@ namespace SH {
 
         // 1.
         glm::vec3 r = glm::normalize(dir);
-        float maximum = fmax(fmax(abs(r.x), abs(r.y)), abs(r.z));
+        float maximum = fmaxf(fmaxf(abs(r.x), abs(r.y)), abs(r.z));
         float xx = r.x / maximum;
         float yy = r.y / maximum;
         float zz = r.z / maximum;
@@ -159,7 +160,7 @@ namespace SH {
         } else {
             projection.z = zz * 0.5f;
             projection.x = projection.z / r.z * r.x;
-            projection.z = projection.z / r.z * r.y;
+            projection.y = projection.z / r.z * r.y;
         }
 
         // 3.

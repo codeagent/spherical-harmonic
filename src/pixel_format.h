@@ -8,7 +8,7 @@
 #include <ostream>
 #include <inttypes.h>
 
-namespace SH {
+namespace sh {
     template<class T>
     struct RGBStruct {
         T r;

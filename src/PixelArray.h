@@ -5,7 +5,7 @@
 #include <inttypes.h>
 #include <stdexcept>
 
-namespace SH {
+namespace sh {
 
     template<class T>
     class PixelArrayRow {

@@ -9,7 +9,7 @@
 #include <functional>
 #include <glm/glm.hpp>
 
-namespace SH {
+namespace sh {
     namespace math {
 
         const float PI = 3.14159265358979f;

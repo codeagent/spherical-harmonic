@@ -8,6 +8,8 @@
 #include <memory>
 #include <inttypes.h>
 #include <string>
+#include <fstream>
+#include <type_traits>
 
 #include <stb_image.h>
 
@@ -16,7 +18,7 @@
 #include "CubeMap.h"
 #include "spherical_harmonic.h"
 
-namespace SH {
+namespace sh {
     using namespace std;
 
     shared_ptr<PixelArray<RGB>> loadPixelArrayRgb(const string &path) {
@@ -127,9 +129,93 @@ namespace SH {
         return make_shared<CubeMap<RGBAFloat>>(pxBmp, nxBmp, pyBmp, nyBmp, pzBmp, nzBmp);
     }
 
-    template<class T, int N>
-    void write(const std::string &path, const ShCoefficients<T, N> &item) {
-        //@todo:
+    template<class F>
+    std::ostream &operator<<(std::ostream &stream, const ShCoefficients<F> &h);
+
+    template<class T>
+    std::ostream &operator<<(std::ostream &stream, const ShCoefficients<RGBStruct<T>> &h) {
+
+        stream << "{" << std::endl;
+        stream << "\t\"order\": " << order(h) << ", " << std::endl;
+        stream << "\t\"channels\": {" << std::endl;
+        stream << "\t\t\"red\": [";
+        for(auto it = h.begin(); it != h.end(); it++) {
+            if(it != h.begin()) {
+                stream << ", ";
+            }
+            stream << it->r;
+        }
+        stream << "]," << std::endl;
+        stream << "\t\t\"green\": [";
+        for(auto it = h.begin(); it != h.end(); it++) {
+            if(it != h.begin()) {
+                stream << ", ";
+            }
+            stream << it->g;
+        }
+        stream << "]," << std::endl;
+        stream << "\t\t\"blue\": [";
+        for(auto it = h.begin(); it != h.end(); it++) {
+            if(it != h.begin()) {
+                stream << ", ";
+            }
+            stream << it->b;
+        }
+        stream << "]" << std::endl;
+        stream << "\t}" << std::endl;
+        stream << "}";
+        return stream;
+    }
+
+    template<class T>
+    std::ostream &operator<<(std::ostream &stream, const ShCoefficients<RGBAStruct<T>> &h) {
+
+        stream << "{" << std::endl;
+        stream << "\t\"order\": " << order(h) << ", " << std::endl;
+        stream << "\t\"channels\": {" << std::endl;
+        stream << "\t\t\"red\": [";
+        for(auto it = h.begin(); it != h.end(); it++) {
+            if(it != h.begin()) {
+                stream << ", ";
+            }
+            stream << it->r;
+        }
+        stream << "]," << std::endl;
+        stream << "\t\t\"green\": [";
+        for(auto it = h.begin(); it != h.end(); it++) {
+            if(it != h.begin()) {
+                stream << ", ";
+            }
+            stream << it->g;
+        }
+        stream << "]," << std::endl;
+        stream << "\t\t\"blue\": [";
+        for(auto it = h.begin(); it != h.end(); it++) {
+            if(it != h.begin()) {
+                stream << ", ";
+            }
+            stream << it->b;
+        }
+        stream << "]," << std::endl;
+        stream << "\t\t\"alpha\": [";
+        for(auto it = h.begin(); it != h.end(); it++) {
+            if(it != h.begin()) {
+                stream << ", ";
+            }
+            stream << it->a;
+        }
+        stream << "]" << std::endl;
+        stream << "\t}" << std::endl;
+        stream << "}";
+        return stream;
+    }
+
+    template<class T>
+    void write(const std::string &path, const ShCoefficients<T> &item) {
+        std::ofstream f;
+        f.open(path);
+        f << item;
+        f.close();
     }
 }
 #endif //SH_UTILS_H

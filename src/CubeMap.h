@@ -11,7 +11,7 @@
 #include "PixelArray.h"
 #include "math.h"
 
-namespace SH {
+namespace sh {
 
     enum CubeMapFaceEnum {
         PositiveX,

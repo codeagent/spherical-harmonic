@@ -5,7 +5,6 @@
 #ifndef SH_SPHERICALHARMONIC_H
 #define SH_SPHERICALHARMONIC_H
 
-#include <array>
 #include <vector>
 #include <inttypes.h>
 #include <ostream>
@@ -15,42 +14,47 @@
 #include "math.h"
 #include "CubeMapPolarFunction.h"
 
-namespace SH {
+namespace sh {
 
-    template<class F, int N>
-    using ShCoefficients = std::array<F, (N + 1) * (N + 1)>;
+    template<class F>
+    using ShCoefficients = std::vector<F>;
 
+    template<class F>
+    uint16_t order(const ShCoefficients<F> &coefficients) {
+        return (uint16_t) (sqrt(coefficients.size()) - 1u);
+    }
 
-    template<class F, int N>
-    ShCoefficients<F, N> encode(const math::PolarFunction<F> &polarFunction,
-                                SamplingMethod method,
-                                uint16_t samples) {
-        ShCoefficients<F, N> coefficients;
+    template<class F>
+    ShCoefficients<F> encode(uint16_t order, const math::PolarFunction<F> &polarFunction, SamplingMethod method,
+                             uint16_t samples) {
 
-        for (int l = 0; l <= N; l++) {
-            for (int m = -l; m <= l; l++) {
-                int index = l * (l + 1) + m;
-                if (method == SamplingMethod::MonteCarlo) {
+        ShCoefficients<F> coefficients((order + 1u) * (order + 1u));
+        if (method == SamplingMethod::MonteCarlo) {
+            for (int l = 0; l <= order; l++) {
+                for (int m = -l; m <= l; m++) {
+                    int index = l * (l + 1) + m;
                     coefficients[index] = estimateMonteCarlo(polarFunction, l, m, samples);
-                } else {
-                    coefficients[index] = estimateSpherical(polarFunction, l, m, (uint16_t) sqrtf(2.0f * samples));
+                }
+            }
+        } else {
+            const auto divisions = (uint16_t) sqrtf(2.0f * samples);
+            for (int l = 0; l <= order; l++) {
+                for (int m = -l; m <= l; m++) {
+                    int index = l * (l + 1) + m;
+                    coefficients[index] = estimateSpherical(polarFunction, l, m, divisions);
                 }
             }
         }
         return coefficients;
     }
 
-    template<class F, int N>
-    uint16_t order(const ShCoefficients<F, N> &coefficients) {
-        return (uint16_t) sqrt(coefficients.size());
-    }
 
-
-    template<class F, int N>
-    F decode(const ShCoefficients<F, N> &coefficients, float phi, float tetta) {
+    template<class F>
+    F decode(const ShCoefficients<F> &coefficients, float phi, float tetta) {
+        const auto n = order(coefficients);
         F decoded(0);
-        for (int l = 0; l <= N; l++) {
-            for (int m = -l; m <= l; l++) {
+        for (int l = 0; l <= n; l++) {
+            for (int m = -l; m <= l; m++) {
                 int index = l * (l + 1) + m;
                 F c = c[index];
                 decoded += c * math::y(l, m, phi, tetta);
@@ -60,8 +64,8 @@ namespace SH {
     }
 
 
-    template<class F, int N>
-    F product(const ShCoefficients<F, N> &a, const ShCoefficients<F, N> &b) {
+    template<class F>
+    F product(const ShCoefficients<F> &a, const ShCoefficients<F> &b) {
         F dot(0);
         for (int i = 0; i < a.size(); i++) {
             dot += a[i] * b[i];
@@ -69,21 +73,10 @@ namespace SH {
         return dot;
     }
 
-    template<class F, int N>
-    std::ostream &operator<<(std::ostream &stream, const ShCoefficients<F, N> &h) {
-
-        stream << "{";
-        stream << "\"order\": " << order(h) << ", ";
-        stream << "\"channels\": ";
-        stream << "{ ";
-        // @todo:
-        return stream;
-    }
-
     template<class T>
     T estimateSpherical(const math::PolarFunction<T> &polarFunction, int l, int m, uint16_t divisions = 64) {
-        float dPhi = 2.0f * math::PI / divisions, dTetta = math::PI / divisions;
-        float phi = 0.0f, tetta = 0.0f;
+        float dPhi = 2.0f * math::PI / divisions, dTetta = 2.0f * math::PI / divisions;
+        float phi = 0.0f, tetta;
         T estimation(0.0f);
         for (int i = 0; i < divisions; i++) {
             tetta = 0.0f;
