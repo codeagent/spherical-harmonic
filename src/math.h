@@ -36,16 +36,6 @@ namespace sh {
         }
 
         /**
-         * Convert cartesian coordinates (x, y, z) to spherical(phi, tetta)
-         * @param p
-         * @return
-         */
-        glm::vec2 catesianToSpherical(const glm::vec3 &p) {
-            return glm::vec2(atan2f(p.y, p.x), acosf(p.z));
-        }
-
-
-        /**
          * Evaluate an Associated Legendre Polynomial P(l,m,x) at x
          * @param l band index [0, R]
          * @param m index ogf polynomial inside of band [0, l]

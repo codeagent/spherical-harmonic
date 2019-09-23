@@ -34,16 +34,19 @@ namespace sh {
         float y = 0.0f;
     };
 
+
     template<class T>
     T linear(const Texel<T> &q11, const Texel<T> &q12, const Texel<T> &q21, const Texel<T> &q22, float x,
              float y) {
+        const auto eps = 1.0e-3f;
         float x1 = q11.x, x2 = q21.x, y1 = q11.y, y2 = q12.y;
 
         T a1 = q11.value * (y2 - y) + q12.value * (y - y1);
         T a2 = q21.value * (y2 - y) + q22.value * (y - y1);
 
         T dot = a1 * (x2 - x) + a2 * (x - x1);
-        return dot / (x2 - x1) / (y2 - y1);
+
+        return dot / (x2 == x1 ? eps : x2 - x1) / (y2 == y1 ? eps : y2 - y1);
     }
 
     template<class T>
@@ -54,7 +57,6 @@ namespace sh {
         float s11 = abs((y - y1) * (x - x1));
         float s12 = abs((y - y2) * (x - x1));
         float s21 = abs((y - y1) * (x - x2));
-        float s22 = abs((y - y2) * (x - x2));
 
         if (s11 < ds) {
             return q11.value;
