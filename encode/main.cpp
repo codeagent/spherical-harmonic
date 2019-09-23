@@ -26,11 +26,11 @@ int main(int argc, char **argv) {
     cliInput.addArgument(InputArgument("nz", ArgumentType::String, "Path to source cubemap BEGATIVE Z face texture", true));
     cliInput.addArgument(InputArgument("order", ArgumentType::Integer, "The order of spherical harmonics (positive number from 0)", false, "2"));
     cliInput.addArgument(InputArgument("samples", ArgumentType::Integer, "Number of samples to estimate", false, "64"));
-    cliInput.addArgument(InputArgument("method", ArgumentType::String, "Algorithm used for estimating spherical harmonics. Possible values: 'spherical' 'monte-carlo'", false, "monte-carlo"));
+    cliInput.addArgument(InputArgument("method", ArgumentType::String, "Algorithm used for estimating spherical harmonics. Possible values: 'spherical' 'monte-carlo' 'cubemap'", false, "monte-carlo"));
     cliInput.addArgument(InputArgument("filtering", ArgumentType::String, "Texture sample filtering, Possible values: 'linear' 'nearest'", false, "linear"));
 
     string commandLine;
-    for(int i = 0; i < argc; i++) {
+    for (int i = 0; i < argc; i++) {
         commandLine += argv[i] + " "s;
     }
 
@@ -44,6 +44,8 @@ int main(int argc, char **argv) {
         method = SamplingMethod::MonteCarlo;
     } else if (arguments["method"].value.asString == "spherical"s) {
         method = SamplingMethod::Sphere;
+    } else if (arguments["method"].value.asString == "cubemap"s) {
+        method = SamplingMethod::Cubemap;
     } else {
         throw runtime_error("Unknown sampling method: '"s + arguments["method"].value.asString + "'"s);
     }
@@ -52,7 +54,7 @@ int main(int argc, char **argv) {
     if (arguments["filtering"].value.asString == "linear"s) {
         filtering = InterpolationMethod::Bilinear;
     } else if (arguments["filtering"].value.asString == "nearest"s) {
-        filtering = InterpolationMethod::Nearst;
+        filtering = InterpolationMethod::Nearest;
     } else {
         throw runtime_error("Unknown filtering: '"s + arguments["filtering"].value.asString + "'"s);
     }
@@ -65,9 +67,7 @@ int main(int argc, char **argv) {
     const string nz = arguments["nz"].value.asString;
 
     auto cubeMap = loadCubemapRgbFloat(px, nx, py, ny, pz, nz);
-    CubeMapPolarFunction<RGBFloat> polarFunction(cubeMap, filtering);
-
-    ShCoefficients<RGBFloat> shCoefficients = encode<RGBFloat>((uint16_t) order, polarFunction, method, (uint16_t) samples);
+    ShCoefficients<RGBFloat> shCoefficients = encode<RGBFloat>(cubeMap, (uint16_t) order, method, (uint16_t) samples, filtering);
 
     write(output, shCoefficients);
 

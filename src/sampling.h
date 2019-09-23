@@ -18,11 +18,11 @@ namespace sh {
     enum class SamplingMethod {
         Sphere,
         MonteCarlo,
-        SolidAngle
+        Cubemap
     };
 
     enum class InterpolationMethod {
-        Nearst,
+        Nearest,
         Bilinear
     };
 
@@ -103,7 +103,7 @@ namespace sh {
         q22.y = fminf(h - 1.0f, ceilf(y + d));
         q22.value = bitmap[q22.y][q22.x];
 
-        if (filtering == InterpolationMethod::Nearst) {
+        if (filtering == InterpolationMethod::Nearest) {
             return nearest(q11, q12, q21, q22, x, y);
         } else {
             return linear(q11, q12, q21, q22, x, y);

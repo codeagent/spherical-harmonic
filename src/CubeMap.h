@@ -53,12 +53,12 @@ namespace sh {
             return faces[face];
         }
 
-        uint16_t getWidth() const {
-            return faces.begin()->first->getWidth();
+        uint16_t getWidth()  {
+            return faces.begin()->second->getWidth();
         }
 
-        uint16_t getHeight() const {
-            return faces.begin()->first->getHeight();
+        uint16_t getHeight()  {
+            return faces.begin()->second->getHeight();
         }
     };
 }

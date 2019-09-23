@@ -8,6 +8,10 @@
 #include <vector>
 #include <inttypes.h>
 #include <ostream>
+#include <map>
+#include <cmath>
+
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "CubeMap.h"
 #include "sampling.h"
@@ -22,55 +26,6 @@ namespace sh {
     template<class F>
     uint16_t order(const ShCoefficients<F> &coefficients) {
         return (uint16_t) (sqrt(coefficients.size()) - 1u);
-    }
-
-    template<class F>
-    ShCoefficients<F> encode(uint16_t order, const math::PolarFunction<F> &polarFunction, SamplingMethod method,
-                             uint16_t samples) {
-
-        ShCoefficients<F> coefficients((order + 1u) * (order + 1u));
-        if (method == SamplingMethod::MonteCarlo) {
-            for (int l = 0; l <= order; l++) {
-                for (int m = -l; m <= l; m++) {
-                    int index = l * (l + 1) + m;
-                    coefficients[index] = estimateMonteCarlo(polarFunction, l, m, samples);
-                }
-            }
-        } else {
-            const auto divisions = (uint16_t) sqrtf(2.0f * samples);
-            for (int l = 0; l <= order; l++) {
-                for (int m = -l; m <= l; m++) {
-                    int index = l * (l + 1) + m;
-                    coefficients[index] = estimateSpherical(polarFunction, l, m, divisions);
-                }
-            }
-        }
-        return coefficients;
-    }
-
-
-    template<class F>
-    F decode(const ShCoefficients<F> &coefficients, float phi, float tetta) {
-        const auto n = order(coefficients);
-        F decoded(0);
-        for (int l = 0; l <= n; l++) {
-            for (int m = -l; m <= l; m++) {
-                int index = l * (l + 1) + m;
-                F c = c[index];
-                decoded += c * math::y(l, m, phi, tetta);
-            }
-        }
-        return decoded;
-    }
-
-
-    template<class F>
-    F product(const ShCoefficients<F> &a, const ShCoefficients<F> &b) {
-        F dot(0);
-        for (int i = 0; i < a.size(); i++) {
-            dot += a[i] * b[i];
-        }
-        return dot;
     }
 
     template<class T>
@@ -101,6 +56,116 @@ namespace sh {
             estimation += polarFunction(angles.x, angles.y) * y;
         }
         return estimation * factor;
+    }
+
+    float projectedArea(float s, float t) {
+        return std::atan2(s * t, std::sqrt(s * s + t * t + 1.0f));
+    }
+
+    float solidAngle(float s, float t, float ds, float dt) {
+        s = std::abs(s);
+        t = std::abs(t);
+        float C = projectedArea(s, t);
+        float A = projectedArea(s - ds, t - dt);
+        float B = projectedArea(s - ds, t);
+        float D = projectedArea(s, t - dt);
+        return A - B + C - D;
+    }
+
+    template<class T>
+    T estimateCubeMap(const std::shared_ptr<CubeMap<T>> &cubemap, int l, int m) {
+        using namespace std;
+        using namespace glm;
+        using namespace math;
+
+        const map<CubeMapFaceEnum, mat3> transformLookup = {
+                {CubeMapFaceEnum::PositiveX, mat3(axis::z, axis::y, -axis::x)},
+                {CubeMapFaceEnum::NegativeX, mat3(-axis::z, axis::y, axis::x)},
+                {CubeMapFaceEnum::PositiveY, mat3(axis::x, -axis::z, -axis::y)},
+                {CubeMapFaceEnum::NegativeY, mat3(axis::x, axis::z, axis::y)},
+                {CubeMapFaceEnum::PositiveZ, mat3(-axis::x, axis::y, -axis::z)},
+                {CubeMapFaceEnum::NegativeZ, mat3(axis::x, axis::y, axis::z)},
+        };
+
+        T estimation(0.0f);
+        const int w = cubemap->getWidth(), h = cubemap->getHeight();
+        float dt = 2.0f / h, ds = 2.0f / w;
+        float s, t = -1.0f + dt * 0.5f;
+        for (auto &p: transformLookup) {
+            const auto transform = p.second;
+            for (int i = 0; i < h; i++) {
+                s = -1.0f + ds * 0.5f;
+                for (int j = 0; j < w; j++) {
+                    vec3 r = transform * normalize(vec3(s, t, -1.0f));
+                    vec2 angles = math::catesianToSpherical(r);
+                    T sample = sampleCubemap<T>(*cubemap, r, InterpolationMethod::Nearest);
+                    float dw = solidAngle(s, t, ds, dt);
+                    float y = math::y(l, m, angles.x, angles.y);
+                    estimation += sample * y * dw;
+                    s += ds;
+                }
+                t += dt;
+            }
+        }
+        return estimation;
+    }
+
+    template<class F>
+    ShCoefficients<F> encode(const std::shared_ptr<CubeMap<F> > &cubeMap, uint16_t order, SamplingMethod method,
+                             uint16_t samples, InterpolationMethod filtering) {
+
+        ShCoefficients<F> coefficients((order + 1u) * (order + 1u));
+        if (method == SamplingMethod::MonteCarlo) {
+            CubeMapPolarFunction<F> polarFunction(cubeMap, filtering);
+            for (int l = 0; l <= order; l++) {
+                for (int m = -l; m <= l; m++) {
+                    int index = l * (l + 1) + m;
+                    coefficients[index] = estimateMonteCarlo<F>(polarFunction, l, m, samples);
+                }
+            }
+        } else if (method == SamplingMethod::Sphere) {
+            CubeMapPolarFunction<F> polarFunction(cubeMap, filtering);
+            const auto divisions = (uint16_t) sqrtf(2.0f * samples);
+            for (int l = 0; l <= order; l++) {
+                for (int m = -l; m <= l; m++) {
+                    int index = l * (l + 1) + m;
+                    coefficients[index] = estimateSpherical<F>(polarFunction, l, m, divisions);
+                }
+            }
+        } else {
+            for (int l = 0; l <= order; l++) {
+                for (int m = -l; m <= l; m++) {
+                    int index = l * (l + 1) + m;
+                    coefficients[index] = estimateCubeMap<F>(cubeMap, l, m);
+                }
+            }
+        }
+
+        return coefficients;
+    }
+
+
+    template<class F>
+    F decode(const ShCoefficients<F> &coefficients, float phi, float tetta) {
+        const auto n = order(coefficients);
+        F decoded(0);
+        for (int l = 0; l <= n; l++) {
+            for (int m = -l; m <= l; m++) {
+                int index = l * (l + 1) + m;
+                F c = c[index];
+                decoded += c * math::y(l, m, phi, tetta);
+            }
+        }
+        return decoded;
+    }
+
+    template<class F>
+    F product(const ShCoefficients<F> &a, const ShCoefficients<F> &b) {
+        F dot(0);
+        for (int i = 0; i < a.size(); i++) {
+            dot += a[i] * b[i];
+        }
+        return dot;
     }
 }
 #endif //SH_SPHERICALHARMONIC_H

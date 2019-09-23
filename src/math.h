@@ -17,6 +17,12 @@ namespace sh {
         template<class T>
         using PolarFunction = std::function<T(float, float)>;
 
+        namespace axis {
+            glm::vec3 x(1.0f, 0.0f, 0.0f);
+            glm::vec3 y(0.0f, 1.0f, 0.0f);
+            glm::vec3 z(0.0f, 0.0f, 1.0f);
+        }
+
         float fact(float a) {
             if (a <= 1.0f) {
                 return 1.0;
@@ -33,6 +39,15 @@ namespace sh {
         glm::vec3 sphericalToCartesian(float phi, float tetta) {
             float sinTetta = sinf(tetta);
             return glm::vec3(sinTetta * cosf(phi), sinTetta * sinf(phi), cosf(tetta));
+        }
+
+        /**
+        * Convert cartesian coordinates (x, y, z) to spherical(phi, tetta)
+        * @param p
+        * @return
+        */
+        glm::vec2 catesianToSpherical(const glm::vec3 &p) {
+            return glm::vec2(atan2f(p.y, p.x), acosf(p.z));
         }
 
         /**
