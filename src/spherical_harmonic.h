@@ -79,12 +79,12 @@ namespace sh {
         using namespace math;
 
         const map<CubeMapFaceEnum, mat3> transformLookup = {
-                {CubeMapFaceEnum::PositiveX, mat3(axis::z, axis::y, -axis::x)},
-                {CubeMapFaceEnum::NegativeX, mat3(-axis::z, axis::y, axis::x)},
+                {CubeMapFaceEnum::PositiveX, mat3(-axis::z, axis::y, -axis::x)},
+                {CubeMapFaceEnum::NegativeX, mat3(axis::z, axis::y, axis::x)},
                 {CubeMapFaceEnum::PositiveY, mat3(axis::x, -axis::z, -axis::y)},
                 {CubeMapFaceEnum::NegativeY, mat3(axis::x, axis::z, axis::y)},
-                {CubeMapFaceEnum::PositiveZ, mat3(-axis::x, axis::y, -axis::z)},
-                {CubeMapFaceEnum::NegativeZ, mat3(axis::x, axis::y, axis::z)},
+                {CubeMapFaceEnum::PositiveZ, mat3(axis::x, axis::y, axis::z)},
+                {CubeMapFaceEnum::NegativeZ, mat3(-axis::x, axis::y, -axis::z)},
         };
 
         T estimation(0.0f);
@@ -97,7 +97,7 @@ namespace sh {
                 s = -1.0f + ds * 0.5f;
                 for (int j = 0; j < w; j++) {
                     vec3 r = transform * normalize(vec3(s, t, -1.0f));
-                    vec2 angles = math::catesianToSpherical(r);
+                    vec2 angles = math::cartesianToSpherical(r);
                     T sample = sampleCubemap<T>(*cubemap, r, InterpolationMethod::Nearest);
                     float dw = solidAngle(s, t, ds, dt);
                     float y = math::y(l, m, angles.x, angles.y);
@@ -112,7 +112,7 @@ namespace sh {
 
     template<class F>
     ShCoefficients<F> encode(const std::shared_ptr<CubeMap<F> > &cubeMap, uint16_t order, SamplingMethod method,
-                             uint16_t samples, InterpolationMethod filtering) {
+            uint16_t samples, InterpolationMethod filtering) {
 
         ShCoefficients<F> coefficients((order + 1u) * (order + 1u));
         if (method == SamplingMethod::MonteCarlo) {
@@ -145,6 +145,13 @@ namespace sh {
     }
 
 
+    /**
+     * Get decoded value by parameterized spherical coordinates
+     * @param coefficients
+     * @param phi
+     * @param tetta
+     * @return
+     */
     template<class F>
     F decode(const ShCoefficients<F> &coefficients, float phi, float tetta) {
         const auto n = order(coefficients);
@@ -152,12 +159,65 @@ namespace sh {
         for (int l = 0; l <= n; l++) {
             for (int m = -l; m <= l; m++) {
                 int index = l * (l + 1) + m;
-                F c = c[index];
+                F c = coefficients[index];
                 decoded += c * math::y(l, m, phi, tetta);
             }
         }
         return decoded;
     }
+
+    /**
+     * Convert encoded signal into cubemap
+     * @tparam F
+     * @param coefficients
+     * @param size
+     * @return
+     */
+    template<class F>
+    std::shared_ptr<CubeMap<F>> decode(const ShCoefficients<F> &coefficients, int size) {
+        using namespace std;
+        using namespace glm;
+        using namespace math;
+
+        const map<CubeMapFaceEnum, mat3> transformLookup = {
+                {CubeMapFaceEnum::PositiveX, mat3(-axis::z, axis::y, -axis::x)},
+                {CubeMapFaceEnum::NegativeX, mat3(axis::z, axis::y, axis::x)},
+                {CubeMapFaceEnum::PositiveY, mat3(axis::x, -axis::z, -axis::y)},
+                {CubeMapFaceEnum::NegativeY, mat3(axis::x, axis::z, axis::y)},
+                {CubeMapFaceEnum::PositiveZ, mat3(axis::x, axis::y, axis::z)},
+                {CubeMapFaceEnum::NegativeZ, mat3(-axis::x, axis::y, -axis::z)},
+        };
+
+        float dt = 2.0f / size, ds = 2.0f / size;
+        map<CubeMapFaceEnum, shared_ptr<PixelArray<F>>> faces;
+        for (auto &item : transformLookup) {
+            const auto face = item.first;
+            const auto transform = item.second;
+
+            auto bitmap = make_shared<PixelArray<F>>(new F[size * size], size, size);
+
+            float s, t = -1.0f + dt * 0.5f;
+            for (int y = 0; y < size; y++) {
+                s = -1.0f + ds * 0.5f;
+                for (int x = 0; x < size; x++) {
+                    vec3 r = transform * normalize(vec3(s, t, -1.0f));
+                    vec2 angles = math::cartesianToSpherical(r);
+                    (*bitmap)[y][x] = decode<F>(coefficients, angles.x, angles.y);
+                    s += ds;
+                }
+                t += dt;
+            }
+            faces[face] = bitmap;
+        }
+        return make_shared<CubeMap<F>>(
+                faces[CubeMapFaceEnum::PositiveX],
+                faces[CubeMapFaceEnum::NegativeX],
+                faces[CubeMapFaceEnum::PositiveY],
+                faces[CubeMapFaceEnum::NegativeY],
+                faces[CubeMapFaceEnum::PositiveZ],
+                faces[CubeMapFaceEnum::NegativeZ]);
+    }
+
 
     template<class F>
     F product(const ShCoefficients<F> &a, const ShCoefficients<F> &b) {

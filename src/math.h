@@ -46,7 +46,7 @@ namespace sh {
         * @param p
         * @return
         */
-        glm::vec2 catesianToSpherical(const glm::vec3 &p) {
+        glm::vec2 cartesianToSpherical(const glm::vec3 &p) {
             return glm::vec2(atan2f(p.y, p.x), acosf(p.z));
         }
 

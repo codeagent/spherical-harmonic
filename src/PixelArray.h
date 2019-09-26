@@ -43,6 +43,10 @@ namespace sh {
             delete[] data;
         }
 
+        const T *getData() const {
+            return data;
+        }
+
         uint16_t getWidth() const {
             return width;
         }
