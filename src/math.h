@@ -18,37 +18,37 @@ namespace sh {
         using PolarFunction = std::function<T(float, float)>;
 
         namespace axis {
-            glm::vec3 x(1.0f, 0.0f, 0.0f);
-            glm::vec3 y(0.0f, 1.0f, 0.0f);
-            glm::vec3 z(0.0f, 0.0f, 1.0f);
+            const glm::vec3 x(1.0f, 0.0f, 0.0f);
+            const glm::vec3 y(0.0f, 1.0f, 0.0f);
+            const glm::vec3 z(0.0f, 0.0f, 1.0f);
         }
 
-        float fact(float a) {
-            if (a <= 1.0f) {
+        double fact(double a) {
+            if (a <= 1.0) {
                 return 1.0;
             }
-            return a * fact(a - 1.0f);
+            return a * fact(a - 1.0);
         }
 
         /**
-         * Convert spherical coordinates to cartesian (x, y, z)
+         * Convert spherical coordinates to cartesian (x, y, z) (OpenGL space)
          * @param phi
          * @param tetta
          * @return
          */
         glm::vec3 sphericalToCartesian(float phi, float tetta) {
             float sinTetta = sinf(tetta);
-            return glm::vec3(sinTetta * cosf(phi), sinTetta * sinf(phi), cosf(tetta));
+            return glm::vec3(sinTetta * sinf(phi), cosf(tetta), sinTetta * cosf(phi));
         }
 
         /**
-        * Convert cartesian coordinates (x, y, z) to spherical(phi, tetta)
+        * Convert cartesian coordinates (OpenGL x, y, z) to spherical(phi, tetta)
         * @param p
         * @return
         */
         glm::vec2 cartesianToSpherical(const glm::vec3 &p) {
-            return glm::vec2(atan2f(p.y, p.x), acosf(p.z));
-        }
+            return glm::vec2(atan2f(p.x, p.z), acosf(p.y));
+    }
 
         /**
          * Evaluate an Associated Legendre Polynomial P(l,m,x) at x
@@ -59,7 +59,7 @@ namespace sh {
          */
         float P(int l, int m, float x) {
 
-            float pmm = 1.0;
+            float pmm = 1.0f;
             if (m > 0) {
                 float somx2 = sqrtf((1.0f - x) * (1.0f + x));
                 float fact = 1.0;

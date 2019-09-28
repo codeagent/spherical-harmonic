@@ -112,9 +112,7 @@ namespace sh {
         return stream;
     }
 
-    using RGB = RGBStruct<uint8_t>;
-    using RGBA= RGBAStruct<uint8_t>;
-    using RGBFloat = RGBStruct<float>;
-    using RGBAFloat= RGBAStruct<float>;
+    using RGB = RGBStruct<float>;
+    using RGBA= RGBAStruct<float>;
 }
 #endif //SH_PIXEL_FORMAT_H

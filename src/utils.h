@@ -32,9 +32,11 @@ namespace sh {
         Hdr
     };
 
+
+
     shared_ptr<PixelArray<RGB>> loadPixelArrayRgb(const string &path) {
         int width, height, channels;
-        unsigned char *data = stbi_load(path.c_str(), &width, &height, &channels, 3);
+        float *data = stbi_loadf(path.c_str(), &width, &height, &channels, 3);
         if (!data) {
             throw std::runtime_error("Failed to load image '" + path + "' due to reason: " + stbi_failure_reason());
         }
@@ -43,32 +45,15 @@ namespace sh {
 
     shared_ptr<PixelArray<RGBA>> loadPixelArrayRgba(const string &path) {
         int width, height, channels;
-        unsigned char *data = stbi_load(path.c_str(), &width, &height, &channels, 4);
+        float *data = stbi_loadf(path.c_str(), &width, &height, &channels, 4);
         if (!data) {
             throw std::runtime_error("Failed to load image '" + path + "' due to reason: " + stbi_failure_reason());
         }
         return make_shared<PixelArray<RGBA>>((RGBA *) data, width, height);
     }
 
-    shared_ptr<PixelArray<RGBFloat>> loadPixelArrayRgbFloat(const string &path) {
-        int width, height, channels;
-        float *data = stbi_loadf(path.c_str(), &width, &height, &channels, 3);
-        if (!data) {
-            throw std::runtime_error("Failed to load image '" + path + "' due to reason: " + stbi_failure_reason());
-        }
-        return make_shared<PixelArray<RGBFloat>>((RGBFloat *) data, width, height);
-    }
 
-    shared_ptr<PixelArray<RGBAFloat>> loadPixelArrayRgbaFloat(const string &path) {
-        int width, height, channels;
-        float *data = stbi_loadf(path.c_str(), &width, &height, &channels, 4);
-        if (!data) {
-            throw std::runtime_error("Failed to load image '" + path + "' due to reason: " + stbi_failure_reason());
-        }
-        return make_shared<PixelArray<RGBAFloat>>((RGBAFloat *) data, width, height);
-    }
-
-    shared_ptr<CubeMap<RGB>> loadCubemapRgb(
+    shared_ptr<CubeMap<RGB>> loadCubemapRgbFloat(
             const string &px,
             const string &nx,
             const string &py,
@@ -79,14 +64,14 @@ namespace sh {
         const auto pxBmp = loadPixelArrayRgb(px);
         const auto nxBmp = loadPixelArrayRgb(nx);
         const auto pyBmp = loadPixelArrayRgb(py);
-        const auto nyBmp = loadPixelArrayRgb(nx);
+        const auto nyBmp = loadPixelArrayRgb(ny);
         const auto pzBmp = loadPixelArrayRgb(pz);
         const auto nzBmp = loadPixelArrayRgb(nz);
 
         return make_shared<CubeMap<RGB>>(pxBmp, nxBmp, pyBmp, nyBmp, pzBmp, nzBmp);
     }
 
-    shared_ptr<CubeMap<RGBA>> loadCubemapRgba(
+    shared_ptr<CubeMap<RGBA>> loadCubemapRgbaFloat(
             const string &px,
             const string &nx,
             const string &py,
@@ -97,54 +82,14 @@ namespace sh {
         const auto pxBmp = loadPixelArrayRgba(px);
         const auto nxBmp = loadPixelArrayRgba(nx);
         const auto pyBmp = loadPixelArrayRgba(py);
-        const auto nyBmp = loadPixelArrayRgba(nx);
+        const auto nyBmp = loadPixelArrayRgba(ny);
         const auto pzBmp = loadPixelArrayRgba(pz);
         const auto nzBmp = loadPixelArrayRgba(nz);
 
         return make_shared<CubeMap<RGBA>>(pxBmp, nxBmp, pyBmp, nyBmp, pzBmp, nzBmp);
     }
 
-    shared_ptr<CubeMap<RGBFloat>> loadCubemapRgbFloat(
-            const string &px,
-            const string &nx,
-            const string &py,
-            const string &ny,
-            const string &pz,
-            const string &nz
-    ) {
-        const auto pxBmp = loadPixelArrayRgbFloat(px);
-        const auto nxBmp = loadPixelArrayRgbFloat(nx);
-        const auto pyBmp = loadPixelArrayRgbFloat(py);
-        const auto nyBmp = loadPixelArrayRgbFloat(nx);
-        const auto pzBmp = loadPixelArrayRgbFloat(pz);
-        const auto nzBmp = loadPixelArrayRgbFloat(nz);
-
-        return make_shared<CubeMap<RGBFloat>>(pxBmp, nxBmp, pyBmp, nyBmp, pzBmp, nzBmp);
-    }
-
-    shared_ptr<CubeMap<RGBAFloat>> loadCubemapRgbaFloat(
-            const string &px,
-            const string &nx,
-            const string &py,
-            const string &ny,
-            const string &pz,
-            const string &nz
-    ) {
-        const auto pxBmp = loadPixelArrayRgbaFloat(px);
-        const auto nxBmp = loadPixelArrayRgbaFloat(nx);
-        const auto pyBmp = loadPixelArrayRgbaFloat(py);
-        const auto nyBmp = loadPixelArrayRgbaFloat(nx);
-        const auto pzBmp = loadPixelArrayRgbaFloat(pz);
-        const auto nzBmp = loadPixelArrayRgbaFloat(nz);
-
-        return make_shared<CubeMap<RGBAFloat>>(pxBmp, nxBmp, pyBmp, nyBmp, pzBmp, nzBmp);
-    }
-
-    template<class F>
-    std::ostream &operator<<(std::ostream &stream, const ShCoefficients<F> &h);
-
-    template<class T>
-    std::ostream &operator<<(std::ostream &stream, const ShCoefficients<RGBStruct<T>> &h) {
+    std::ostream &operator<<(std::ostream &stream, const ShCoefficients<RGB> &h) {
 
         stream << "{" << std::endl;
         stream << "\t\"order\": " << order(h) << ", " << std::endl;
@@ -178,8 +123,7 @@ namespace sh {
         return stream;
     }
 
-    template<class T>
-    std::ostream &operator<<(std::ostream &stream, const ShCoefficients<RGBAStruct<T>> &h) {
+    std::ostream &operator<<(std::ostream &stream, const ShCoefficients<RGBA> &h) {
 
         stream << "{" << std::endl;
         stream << "\t\"order\": " << order(h) << ", " << std::endl;
@@ -229,9 +173,24 @@ namespace sh {
         f.close();
     }
 
-    template<class F>
+    inline stbi_uc * hdr2ldr(const PixelArray<RGB>& bitmap) {
+        const auto w = bitmap.getWidth(), h = bitmap.getHeight();
+        const auto bytes = sizeof(RGB) * w * h;
+        auto *data = (float *) STBI_MALLOC(bytes);
+        memcpy(data, bitmap.getData(), bytes);
+        return stbi__hdr_to_ldr(data, w, h, 3);
+    }
+
+    inline stbi_uc * hdr2ldr(const PixelArray<RGBA>& bitmap) {
+        const auto w = bitmap.getWidth(), h = bitmap.getHeight();
+        const auto bytes = sizeof(RGBA) * w * h;
+        auto *data = (float *) STBI_MALLOC(bytes);
+        memcpy(data, bitmap.getData(), bytes);
+        return stbi__hdr_to_ldr(data, w, h, 4);
+    }
+
     void write(const std::string &path, const FileFormat format,
-            const std::shared_ptr<CubeMap<RGBStruct<F>>> &cubemap) {
+            const std::shared_ptr<CubeMap<RGB>> &cubemap) {
         using namespace std;
         map<CubeMapFaceEnum, string> faceToNameLookup = {
                 {CubeMapFaceEnum::PositiveX, "posx"s},
@@ -239,53 +198,57 @@ namespace sh {
                 {CubeMapFaceEnum::PositiveY, "posy"s},
                 {CubeMapFaceEnum::NegativeY, "negy"s},
                 {CubeMapFaceEnum::PositiveZ, "posz"s},
-                {CubeMapFaceEnum::NegativeY, "negz"s}
+                {CubeMapFaceEnum::NegativeZ, "negz"s}
         };
+
+        const auto w = cubemap->getWidth(), h = cubemap->getHeight();
 
         for (auto &item: faceToNameLookup) {
             const CubeMapFaceEnum face = item.first;
             const string name = item.second;
+            const auto bitmap = (*cubemap)[face];
 
             if (format == FileFormat::Png) {
                 const auto filename = path + "/"s + name + ".png"s;
-                if (!stbi_write_png(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 3, (const void *) (*cubemap)[face]->getData(), 0)) {
+
+                if (!stbi_write_png(filename.c_str(), w, h, 3, hdr2ldr(*bitmap), 0)) {
                     throw runtime_error("Failed to write to file: '" + filename + "'");
                 }
             }
 
-            if (format == FileFormat::Bmp) {
-                const auto filename = path + "/"s + name + ".bmp"s;
-                if (!stbi_write_bmp(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 3, (const void *) (*cubemap)[face]->getData())) {
-                    throw runtime_error("Failed to write to file: '" + filename + "'");
-                }
-            }
-
-            if (format == FileFormat::Tga) {
-                const auto filename = path + "/"s + name + ".tga"s;
-                if (!stbi_write_tga(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 3, (const void *) (*cubemap)[face]->getData())) {
-                    throw runtime_error("Failed to write to file: '" + filename + "'");
-                }
-            }
-
-            if (format == FileFormat::Jpg) {
-                const auto filename = path + "/"s + name + ".jpg"s;
-                if (!stbi_write_jpg(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 3, (const void *) (*cubemap)[face]->getData(), 95)) {
-                    throw runtime_error("Failed to write to file: '" + filename + "'");
-                }
-            }
-
-            if (format == FileFormat::Hdr) {
-                const auto filename = path + "/"s + name + ".hdr"s;
-                if (!stbi_write_hdr(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 3, (const float *) (*cubemap)[face]->getData())) {
-                    throw runtime_error("Failed to write to file: '" + filename + "'");
-                }
-            }
+            // @todo:
+//            if (format == FileFormat::Bmp) {
+//                const auto filename = path + "/"s + name + ".bmp"s;
+//                if (!stbi_write_bmp(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 3, (const void *) (*cubemap)[face]->getData())) {
+//                    throw runtime_error("Failed to write to file: '" + filename + "'");
+//                }
+//            }
+//
+//            if (format == FileFormat::Tga) {
+//                const auto filename = path + "/"s + name + ".tga"s;
+//                if (!stbi_write_tga(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 3, (const void *) (*cubemap)[face]->getData())) {
+//                    throw runtime_error("Failed to write to file: '" + filename + "'");
+//                }
+//            }
+//
+//            if (format == FileFormat::Jpg) {
+//                const auto filename = path + "/"s + name + ".jpg"s;
+//                if (!stbi_write_jpg(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 3, (const void *) (*cubemap)[face]->getData(), 95)) {
+//                    throw runtime_error("Failed to write to file: '" + filename + "'");
+//                }
+//            }
+//
+//            if (format == FileFormat::Hdr) {
+//                const auto filename = path + "/"s + name + ".hdr"s;
+//                if (!stbi_write_hdr(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 3, (const float *) (*cubemap)[face]->getData())) {
+//                    throw runtime_error("Failed to write to file: '" + filename + "'");
+//                }
+//            }
         }
     };
 
-    template<class F>
     void write(const std::string &path, const FileFormat format,
-            const std::shared_ptr<CubeMap<RGBAStruct<F>>> &cubemap) {
+            const std::shared_ptr<CubeMap<RGBA>> &cubemap) {
         using namespace std;
         map<CubeMapFaceEnum, string> faceToNameLookup = {
                 {CubeMapFaceEnum::PositiveX, "posx"s},
@@ -293,47 +256,48 @@ namespace sh {
                 {CubeMapFaceEnum::PositiveY, "posy"s},
                 {CubeMapFaceEnum::NegativeY, "negy"s},
                 {CubeMapFaceEnum::PositiveZ, "posz"s},
-                {CubeMapFaceEnum::NegativeY, "negz"s}
+                {CubeMapFaceEnum::NegativeZ, "negz"s}
         };
 
         for (auto &item: faceToNameLookup) {
             const CubeMapFaceEnum face = item.first;
             const string name = item.second;
 
-            if (format == FileFormat::Png) {
-                const auto filename = path + "/"s + name + ".png"s;
-                if (!stbi_write_png(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 4, (const void *) (*cubemap)[face]->getData(), 0)) {
-                    throw runtime_error("Failed to write to file: '" + filename + "'");
-                }
-            }
-
-            if (format == FileFormat::Bmp) {
-                const auto filename = path + "/"s + name + ".bmp"s;
-                if (!stbi_write_bmp(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 4, (const void *) (*cubemap)[face]->getData())) {
-                    throw runtime_error("Failed to write to file: '" + filename + "'");
-                }
-            }
-
-            if (format == FileFormat::Tga) {
-                const auto filename = path + "/"s + name + ".tga"s;
-                if (!stbi_write_tga(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 4, (const void *) (*cubemap)[face]->getData())) {
-                    throw runtime_error("Failed to write to file: '" + filename + "'");
-                }
-            }
-
-            if (format == FileFormat::Jpg) {
-                const auto filename = path + "/"s + name + ".jpg"s;
-                if (!stbi_write_jpg(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 4, (const void *) (*cubemap)[face]->getData()), 95) {
-                    throw runtime_error("Failed to write to file: '" + filename + "'");
-                }
-            }
-
-            if (format == FileFormat::Hdr) {
-                const auto filename = path + "/"s + name + ".hdr"s;
-                if (!stbi_write_hdr(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 4, (const void *) (*cubemap)[face]->getData())) {
-                    throw runtime_error("Failed to write to file: '" + filename + "'");
-                }
-            }
+            //@todo:
+//            if (format == FileFormat::Png) {
+//                const auto filename = path + "/"s + name + ".png"s;
+//                if (!stbi_write_png(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 4, (const void *) (*cubemap)[face]->getData(), 0)) {
+//                    throw runtime_error("Failed to write to file: '" + filename + "'");
+//                }
+//            }
+//
+//            if (format == FileFormat::Bmp) {
+//                const auto filename = path + "/"s + name + ".bmp"s;
+//                if (!stbi_write_bmp(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 4, (const void *) (*cubemap)[face]->getData())) {
+//                    throw runtime_error("Failed to write to file: '" + filename + "'");
+//                }
+//            }
+//
+//            if (format == FileFormat::Tga) {
+//                const auto filename = path + "/"s + name + ".tga"s;
+//                if (!stbi_write_tga(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 4, (const void *) (*cubemap)[face]->getData())) {
+//                    throw runtime_error("Failed to write to file: '" + filename + "'");
+//                }
+//            }
+//
+//            if (format == FileFormat::Jpg) {
+//                const auto filename = path + "/"s + name + ".jpg"s;
+//                if (!stbi_write_jpg(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 4, (const void *) (*cubemap)[face]->getData()), 95) {
+//                    throw runtime_error("Failed to write to file: '" + filename + "'");
+//                }
+//            }
+//
+//            if (format == FileFormat::Hdr) {
+//                const auto filename = path + "/"s + name + ".hdr"s;
+//                if (!stbi_write_hdr(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 4, (const void *) (*cubemap)[face]->getData())) {
+//                    throw runtime_error("Failed to write to file: '" + filename + "'");
+//                }
+//            }
         }
     };
 
@@ -342,7 +306,7 @@ namespace sh {
         using namespace std;
         ifstream f(path);
 
-        if(!f) {
+        if (!f) {
             throw runtime_error("Failed to open file: '" + path + "'");
         }
         string str((std::istreambuf_iterator<char>(f)),
@@ -377,11 +341,11 @@ namespace sh {
         return channelsMap;
     }
 
-    ShCoefficients<RGBFloat> readRgb(const std::string &path) {
+    ShCoefficients<RGB> readRgb(const std::string &path) {
         using namespace std;
 
         auto channels = _read(path);
-        ShCoefficients<RGBFloat> coefficients;
+        ShCoefficients<RGB> coefficients;
 
         if (channels.empty()) {
             return coefficients;
@@ -409,11 +373,11 @@ namespace sh {
         return coefficients;
     }
 
-    ShCoefficients<RGBAFloat> readRgba(const std::string &path) {
+    ShCoefficients<RGBA> readRgba(const std::string &path) {
         using namespace std;
 
         auto channels = _read(path);
-        ShCoefficients<RGBAFloat> coefficients;
+        ShCoefficients<RGBA> coefficients;
 
         if (channels.empty()) {
             return coefficients;

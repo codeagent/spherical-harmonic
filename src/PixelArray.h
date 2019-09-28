@@ -19,7 +19,14 @@ namespace sh {
             return length;
         }
 
-        T operator[](int index) {
+        T& operator[](int index) {
+            if (index < 0 || index >= length) {
+                throw std::runtime_error("PixelArrayRow: index out of range " + std::to_string(index));
+            }
+            return data[index];
+        }
+
+        const T operator[](int index) const {
             if (index < 0 || index >= length) {
                 throw std::runtime_error("PixelArrayRow: index out of range " + std::to_string(index));
             }

@@ -15,6 +15,7 @@ using namespace sh::input;
 int main(int argc, char **argv) {
 
     stbi_ldr_to_hdr_gamma(1.0f);
+    stbi_ldr_to_hdr_scale(255.0f);
 
     CliInput cliInput;
     cliInput.addArgument(InputArgument("o", ArgumentType::String, "Output filename path", true));
@@ -23,7 +24,7 @@ int main(int argc, char **argv) {
     cliInput.addArgument(InputArgument("py", ArgumentType::String, "Path to source cubemap POSITIVE Y face texture", true));
     cliInput.addArgument(InputArgument("ny", ArgumentType::String, "Path to source cubemap NEGATIVE Y face texture", true));
     cliInput.addArgument(InputArgument("pz", ArgumentType::String, "Path to source cubemap POSITIVE Z face texture", true));
-    cliInput.addArgument(InputArgument("nz", ArgumentType::String, "Path to source cubemap BEGATIVE Z face texture", true));
+    cliInput.addArgument(InputArgument("nz", ArgumentType::String, "Path to source cubemap NEGATIVE Z face texture", true));
     cliInput.addArgument(InputArgument("order", ArgumentType::Integer, "The order of spherical harmonics (positive number from 0)", false, "2"));
     cliInput.addArgument(InputArgument("samples", ArgumentType::Integer, "Number of samples to estimate", false, "64"));
     cliInput.addArgument(InputArgument("method", ArgumentType::String, "Algorithm used for estimating spherical harmonics. Possible values: 'spherical' 'monte-carlo' 'cubemap'", false, "monte-carlo"));
@@ -67,7 +68,7 @@ int main(int argc, char **argv) {
     const string nz = arguments["nz"].value.asString;
 
     auto cubeMap = loadCubemapRgbFloat(px, nx, py, ny, pz, nz);
-    ShCoefficients<RGBFloat> shCoefficients = encode<RGBFloat>(cubeMap, (uint16_t) order, method, (uint16_t) samples, filtering);
+    ShCoefficients<RGB> shCoefficients = encode<RGB>(cubeMap, (uint16_t) order, method, (uint16_t) samples, filtering);
 
     write(output, shCoefficients);
 

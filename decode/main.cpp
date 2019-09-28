@@ -14,7 +14,9 @@ using namespace sh::input;
 
 int main(int argc, char **argv) {
 
-    stbi_ldr_to_hdr_gamma(1.0f);
+    stbi_hdr_to_ldr_gamma(1.0f);
+    stbi_hdr_to_ldr_scale(255.0f);
+//    stbi_flip_vertically_on_write(1);
 
     const map<string, FileFormat> FORMAT_LOOKUP = {
             {"png"s, FileFormat::Png},
@@ -46,7 +48,7 @@ int main(int argc, char **argv) {
     const FileFormat format = FORMAT_LOOKUP.at(arguments["format"].value.asString);
     const int size = arguments["size"].value.asInteger;
 
-    const ShCoefficients<RGBFloat> coefficients = readRgb(input);
+    const ShCoefficients<RGB> coefficients = readRgb(input);
     auto cubemap = decode(coefficients, size);
     write(output, format, cubemap);
 

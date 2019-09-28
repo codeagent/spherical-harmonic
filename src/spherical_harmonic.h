@@ -8,6 +8,7 @@
 #include <vector>
 #include <inttypes.h>
 #include <ostream>
+#include <iostream>
 #include <map>
 #include <cmath>
 
@@ -79,12 +80,12 @@ namespace sh {
         using namespace math;
 
         const map<CubeMapFaceEnum, mat3> transformLookup = {
-                {CubeMapFaceEnum::PositiveX, mat3(-axis::z, axis::y, -axis::x)},
-                {CubeMapFaceEnum::NegativeX, mat3(axis::z, axis::y, axis::x)},
-                {CubeMapFaceEnum::PositiveY, mat3(axis::x, -axis::z, -axis::y)},
-                {CubeMapFaceEnum::NegativeY, mat3(axis::x, axis::z, axis::y)},
-                {CubeMapFaceEnum::PositiveZ, mat3(axis::x, axis::y, axis::z)},
-                {CubeMapFaceEnum::NegativeZ, mat3(-axis::x, axis::y, -axis::z)},
+                {CubeMapFaceEnum::PositiveX, lookAt(vec3(0.0f), vec3(1.0f, 0.0f, 0.0f), vec3(0.0f, -1.0f, 0.0f))},
+                {CubeMapFaceEnum::NegativeX, lookAt(vec3(0.0f), vec3(-1.0f, 0.0f, 0.0f), vec3(0.0f, -1.0f, 0.0f))},
+                {CubeMapFaceEnum::PositiveY, lookAt(vec3(0.0f), vec3(0.0f, -1.0f, 0.0f), vec3(0.0f, 0.0f, -1.0f))},
+                {CubeMapFaceEnum::NegativeY, lookAt(vec3(0.0f), vec3(0.0f, 1.0f, 0.0f), vec3(0.0f, 0.0f, 1.0f))},
+                {CubeMapFaceEnum::NegativeZ, lookAt(vec3(0.0f), vec3(0.0f, 0.0f, -1.0f), vec3(0.0f, -1.0f, 0.0f))},
+                {CubeMapFaceEnum::PositiveZ, lookAt(vec3(0.0f), vec3(0.0f, 0.0f, 1.0f), vec3(0.0f, -1.0f, 0.0f))}
         };
 
         T estimation(0.0f);
@@ -184,8 +185,8 @@ namespace sh {
                 {CubeMapFaceEnum::NegativeX, mat3(axis::z, axis::y, axis::x)},
                 {CubeMapFaceEnum::PositiveY, mat3(axis::x, -axis::z, -axis::y)},
                 {CubeMapFaceEnum::NegativeY, mat3(axis::x, axis::z, axis::y)},
-                {CubeMapFaceEnum::PositiveZ, mat3(axis::x, axis::y, axis::z)},
-                {CubeMapFaceEnum::NegativeZ, mat3(-axis::x, axis::y, -axis::z)},
+                {CubeMapFaceEnum::PositiveZ, mat3(axis::x, axis::y, -axis::z)},
+                {CubeMapFaceEnum::NegativeZ, mat3(-axis::x, axis::y, axis::z)}
         };
 
         float dt = 2.0f / size, ds = 2.0f / size;
@@ -202,7 +203,8 @@ namespace sh {
                 for (int x = 0; x < size; x++) {
                     vec3 r = transform * normalize(vec3(s, t, -1.0f));
                     vec2 angles = math::cartesianToSpherical(r);
-                    (*bitmap)[y][x] = decode<F>(coefficients, angles.x, angles.y);
+                    const auto v = decode<F>(coefficients, angles.x, angles.y);
+                    (*bitmap)[y][x] = v;
                     s += ds;
                 }
                 t += dt;
@@ -218,14 +220,5 @@ namespace sh {
                 faces[CubeMapFaceEnum::NegativeZ]);
     }
 
-
-    template<class F>
-    F product(const ShCoefficients<F> &a, const ShCoefficients<F> &b) {
-        F dot(0);
-        for (int i = 0; i < a.size(); i++) {
-            dot += a[i] * b[i];
-        }
-        return dot;
-    }
 }
 #endif //SH_SPHERICALHARMONIC_H
