@@ -12,6 +12,7 @@
 #include <streambuf>
 #include <type_traits>
 
+
 #include <stb_image.h>
 #include <stb_image_write.h>
 #include <json.h>
@@ -31,8 +32,6 @@ namespace sh {
         Jpg,
         Hdr
     };
-
-
 
     shared_ptr<PixelArray<RGB>> loadPixelArrayRgb(const string &path) {
         int width, height, channels;
@@ -173,7 +172,7 @@ namespace sh {
         f.close();
     }
 
-    inline stbi_uc * hdr2ldr(const PixelArray<RGB>& bitmap) {
+    inline stbi_uc *hdr2ldr(const PixelArray<RGB> &bitmap) {
         const auto w = bitmap.getWidth(), h = bitmap.getHeight();
         const auto bytes = sizeof(RGB) * w * h;
         auto *data = (float *) STBI_MALLOC(bytes);
@@ -181,7 +180,7 @@ namespace sh {
         return stbi__hdr_to_ldr(data, w, h, 3);
     }
 
-    inline stbi_uc * hdr2ldr(const PixelArray<RGBA>& bitmap) {
+    inline stbi_uc *hdr2ldr(const PixelArray<RGBA> &bitmap) {
         const auto w = bitmap.getWidth(), h = bitmap.getHeight();
         const auto bytes = sizeof(RGBA) * w * h;
         auto *data = (float *) STBI_MALLOC(bytes);
@@ -189,8 +188,64 @@ namespace sh {
         return stbi__hdr_to_ldr(data, w, h, 4);
     }
 
-    void write(const std::string &path, const FileFormat format,
-            const std::shared_ptr<CubeMap<RGB>> &cubemap) {
+    void write(const std::string &path, const FileFormat format, const std::shared_ptr<CubeMap<RGB>> &cubemap,
+            const std::string &prefix = "") {
+        using namespace std;
+
+        map<CubeMapFaceEnum, string> faceToNameLookup = {
+                {CubeMapFaceEnum::PositiveX, "posx"s},
+                {CubeMapFaceEnum::NegativeX, "negx"s},
+                {CubeMapFaceEnum::PositiveY, "posy"s},
+                {CubeMapFaceEnum::NegativeY, "negy"s},
+                {CubeMapFaceEnum::PositiveZ, "posz"s},
+                {CubeMapFaceEnum::NegativeZ, "negz"s}
+        };
+
+        const auto w = cubemap->getWidth(), h = cubemap->getHeight();
+        for (auto &item: faceToNameLookup) {
+            const CubeMapFaceEnum face = item.first;
+            const string name = item.second;
+            const auto bitmap = (*cubemap)[face];
+
+            if (format == FileFormat::Png) {
+                const auto filename = path + "/"s + prefix + name + ".png"s;
+                if (!stbi_write_png(filename.c_str(), w, h, 3, hdr2ldr(*bitmap), 0)) {
+                    throw runtime_error("Failed to write to file: '" + filename + "'");
+                }
+            }
+
+            if (format == FileFormat::Bmp) {
+                const auto filename = path + "/"s + prefix + name + ".bmp"s;
+                if (!stbi_write_bmp(filename.c_str(), w, h, 3, hdr2ldr(*bitmap))) {
+                    throw runtime_error("Failed to write to file: '" + filename + "'");
+                }
+            }
+
+            if (format == FileFormat::Tga) {
+                const auto filename = path + "/"s + prefix + name + ".tga"s;
+                if (!stbi_write_tga(filename.c_str(), w, h, 3, hdr2ldr(*bitmap))) {
+                    throw runtime_error("Failed to write to file: '" + filename + "'");
+                }
+            }
+
+            if (format == FileFormat::Jpg) {
+                const auto filename = path + "/"s + prefix + name + ".jpg"s;
+                if (!stbi_write_jpg(filename.c_str(), w, h, 3, hdr2ldr(*bitmap), 95)) {
+                    throw runtime_error("Failed to write to file: '" + filename + "'");
+                }
+            }
+
+            if (format == FileFormat::Hdr) {
+                const auto filename = path + "/"s + prefix + name + ".hdr"s;
+                if (!stbi_write_hdr(filename.c_str(), w, h, 3, (const float *) bitmap->getData())) {
+                    throw runtime_error("Failed to write to file: '" + filename + "'");
+                }
+            }
+        }
+    };
+
+    void write(const std::string &path, const FileFormat format, const std::shared_ptr<CubeMap<RGBA>> &cubemap,
+            const std::string &prefix = "") {
         using namespace std;
         map<CubeMapFaceEnum, string> faceToNameLookup = {
                 {CubeMapFaceEnum::PositiveX, "posx"s},
@@ -202,102 +257,45 @@ namespace sh {
         };
 
         const auto w = cubemap->getWidth(), h = cubemap->getHeight();
-
         for (auto &item: faceToNameLookup) {
             const CubeMapFaceEnum face = item.first;
             const string name = item.second;
             const auto bitmap = (*cubemap)[face];
 
             if (format == FileFormat::Png) {
-                const auto filename = path + "/"s + name + ".png"s;
-
-                if (!stbi_write_png(filename.c_str(), w, h, 3, hdr2ldr(*bitmap), 0)) {
+                const auto filename = path + "/"s + prefix + name + ".png"s;
+                if (!stbi_write_png(filename.c_str(), w, h, 4, hdr2ldr(*bitmap), 0)) {
                     throw runtime_error("Failed to write to file: '" + filename + "'");
                 }
             }
 
-            // @todo:
-//            if (format == FileFormat::Bmp) {
-//                const auto filename = path + "/"s + name + ".bmp"s;
-//                if (!stbi_write_bmp(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 3, (const void *) (*cubemap)[face]->getData())) {
-//                    throw runtime_error("Failed to write to file: '" + filename + "'");
-//                }
-//            }
-//
-//            if (format == FileFormat::Tga) {
-//                const auto filename = path + "/"s + name + ".tga"s;
-//                if (!stbi_write_tga(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 3, (const void *) (*cubemap)[face]->getData())) {
-//                    throw runtime_error("Failed to write to file: '" + filename + "'");
-//                }
-//            }
-//
-//            if (format == FileFormat::Jpg) {
-//                const auto filename = path + "/"s + name + ".jpg"s;
-//                if (!stbi_write_jpg(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 3, (const void *) (*cubemap)[face]->getData(), 95)) {
-//                    throw runtime_error("Failed to write to file: '" + filename + "'");
-//                }
-//            }
-//
-//            if (format == FileFormat::Hdr) {
-//                const auto filename = path + "/"s + name + ".hdr"s;
-//                if (!stbi_write_hdr(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 3, (const float *) (*cubemap)[face]->getData())) {
-//                    throw runtime_error("Failed to write to file: '" + filename + "'");
-//                }
-//            }
-        }
-    };
+            if (format == FileFormat::Bmp) {
+                const auto filename = path + "/"s + prefix + name + ".bmp"s;
+                if (!stbi_write_bmp(filename.c_str(), w, h, 4, hdr2ldr(*bitmap))) {
+                    throw runtime_error("Failed to write to file: '" + filename + "'");
+                }
+            }
 
-    void write(const std::string &path, const FileFormat format,
-            const std::shared_ptr<CubeMap<RGBA>> &cubemap) {
-        using namespace std;
-        map<CubeMapFaceEnum, string> faceToNameLookup = {
-                {CubeMapFaceEnum::PositiveX, "posx"s},
-                {CubeMapFaceEnum::NegativeX, "negx"s},
-                {CubeMapFaceEnum::PositiveY, "posy"s},
-                {CubeMapFaceEnum::NegativeY, "negy"s},
-                {CubeMapFaceEnum::PositiveZ, "posz"s},
-                {CubeMapFaceEnum::NegativeZ, "negz"s}
-        };
+            if (format == FileFormat::Tga) {
+                const auto filename = path + "/"s + prefix + name + ".tga"s;
+                if (!stbi_write_tga(filename.c_str(), w, h, 4, hdr2ldr(*bitmap))) {
+                    throw runtime_error("Failed to write to file: '" + filename + "'");
+                }
+            }
 
-        for (auto &item: faceToNameLookup) {
-            const CubeMapFaceEnum face = item.first;
-            const string name = item.second;
+            if (format == FileFormat::Jpg) {
+                const auto filename = path + "/"s + prefix + name + ".jpg"s;
+                if (!stbi_write_jpg(filename.c_str(), w, h, 4, hdr2ldr(*bitmap), 95)) {
+                    throw runtime_error("Failed to write to file: '" + filename + "'");
+                }
+            }
 
-            //@todo:
-//            if (format == FileFormat::Png) {
-//                const auto filename = path + "/"s + name + ".png"s;
-//                if (!stbi_write_png(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 4, (const void *) (*cubemap)[face]->getData(), 0)) {
-//                    throw runtime_error("Failed to write to file: '" + filename + "'");
-//                }
-//            }
-//
-//            if (format == FileFormat::Bmp) {
-//                const auto filename = path + "/"s + name + ".bmp"s;
-//                if (!stbi_write_bmp(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 4, (const void *) (*cubemap)[face]->getData())) {
-//                    throw runtime_error("Failed to write to file: '" + filename + "'");
-//                }
-//            }
-//
-//            if (format == FileFormat::Tga) {
-//                const auto filename = path + "/"s + name + ".tga"s;
-//                if (!stbi_write_tga(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 4, (const void *) (*cubemap)[face]->getData())) {
-//                    throw runtime_error("Failed to write to file: '" + filename + "'");
-//                }
-//            }
-//
-//            if (format == FileFormat::Jpg) {
-//                const auto filename = path + "/"s + name + ".jpg"s;
-//                if (!stbi_write_jpg(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 4, (const void *) (*cubemap)[face]->getData()), 95) {
-//                    throw runtime_error("Failed to write to file: '" + filename + "'");
-//                }
-//            }
-//
-//            if (format == FileFormat::Hdr) {
-//                const auto filename = path + "/"s + name + ".hdr"s;
-//                if (!stbi_write_hdr(filename.c_str(), cubemap->getWidth(), cubemap->getHeight(), 4, (const void *) (*cubemap)[face]->getData())) {
-//                    throw runtime_error("Failed to write to file: '" + filename + "'");
-//                }
-//            }
+            if (format == FileFormat::Hdr) {
+                const auto filename = path + "/"s + prefix + name + ".hdr"s;
+                if (!stbi_write_hdr(filename.c_str(), w, h, 4, (const float *) bitmap->getData())) {
+                    throw runtime_error("Failed to write to file: '" + filename + "'");
+                }
+            }
         }
     };
 

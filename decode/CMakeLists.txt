@@ -1,6 +1,7 @@
-file(REMOVE_RECURSE ${CMAKE_CURRENT_BINARY_DIR}/encoded.json)
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/encoded.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+set(TEST_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/test)
 
+file(REMOVE_RECURSE TEST_DEST_DIR)
+file(COPY ${TEST_SRC_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 include_directories(../json.h)
 include_directories(../src)

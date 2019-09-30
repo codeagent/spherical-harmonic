@@ -64,12 +64,12 @@ namespace sh {
     }
 
     float solidAngle(float s, float t, float ds, float dt) {
-        s = std::abs(s);
-        t = std::abs(t);
-        float C = projectedArea(s, t);
+        ds = ds * 0.5f;
+        dt = dt * 0.5f;
+        float C = projectedArea(s + ds, t + dt);
         float A = projectedArea(s - ds, t - dt);
-        float B = projectedArea(s - ds, t);
-        float D = projectedArea(s, t - dt);
+        float B = projectedArea(s + ds, t - dt);
+        float D = projectedArea(s - ds, t + dt);
         return A - B + C - D;
     }
 
@@ -80,19 +80,19 @@ namespace sh {
         using namespace math;
 
         const map<CubeMapFaceEnum, mat3> transformLookup = {
-                {CubeMapFaceEnum::PositiveX, lookAt(vec3(0.0f), vec3(1.0f, 0.0f, 0.0f), vec3(0.0f, -1.0f, 0.0f))},
-                {CubeMapFaceEnum::NegativeX, lookAt(vec3(0.0f), vec3(-1.0f, 0.0f, 0.0f), vec3(0.0f, -1.0f, 0.0f))},
-                {CubeMapFaceEnum::PositiveY, lookAt(vec3(0.0f), vec3(0.0f, -1.0f, 0.0f), vec3(0.0f, 0.0f, -1.0f))},
-                {CubeMapFaceEnum::NegativeY, lookAt(vec3(0.0f), vec3(0.0f, 1.0f, 0.0f), vec3(0.0f, 0.0f, 1.0f))},
-                {CubeMapFaceEnum::NegativeZ, lookAt(vec3(0.0f), vec3(0.0f, 0.0f, -1.0f), vec3(0.0f, -1.0f, 0.0f))},
-                {CubeMapFaceEnum::PositiveZ, lookAt(vec3(0.0f), vec3(0.0f, 0.0f, 1.0f), vec3(0.0f, -1.0f, 0.0f))}
+                {CubeMapFaceEnum::PositiveX, mat3(-axis::z, axis::y, -axis::x)},
+                {CubeMapFaceEnum::NegativeX, mat3(axis::z, axis::y, axis::x)},
+                {CubeMapFaceEnum::PositiveY, mat3(axis::x, -axis::z, -axis::y)},
+                {CubeMapFaceEnum::NegativeY, mat3(axis::x, axis::z, axis::y)},
+                {CubeMapFaceEnum::PositiveZ, mat3(axis::x, axis::y, -axis::z)},
+                {CubeMapFaceEnum::NegativeZ, mat3(-axis::x, axis::y, axis::z)}
         };
 
         T estimation(0.0f);
         const int w = cubemap->getWidth(), h = cubemap->getHeight();
         float dt = 2.0f / h, ds = 2.0f / w;
-        float s, t = -1.0f + dt * 0.5f;
         for (auto &p: transformLookup) {
+            float s, t = -1.0f + dt * 0.5f;
             const auto transform = p.second;
             for (int i = 0; i < h; i++) {
                 s = -1.0f + ds * 0.5f;
@@ -100,7 +100,7 @@ namespace sh {
                     vec3 r = transform * normalize(vec3(s, t, -1.0f));
                     vec2 angles = math::cartesianToSpherical(r);
                     T sample = sampleCubemap<T>(*cubemap, r, InterpolationMethod::Nearest);
-                    float dw = solidAngle(s, t, ds, dt);
+                    float dw = solidAngle(std::abs(s), std::abs(t), ds, dt);
                     float y = math::y(l, m, angles.x, angles.y);
                     estimation += sample * y * dw;
                     s += ds;

@@ -16,7 +16,6 @@ int main(int argc, char **argv) {
 
     stbi_hdr_to_ldr_gamma(1.0f);
     stbi_hdr_to_ldr_scale(255.0f);
-//    stbi_flip_vertically_on_write(1);
 
     const map<string, FileFormat> FORMAT_LOOKUP = {
             {"png"s, FileFormat::Png},
@@ -31,6 +30,8 @@ int main(int argc, char **argv) {
     cliInput.addArgument(InputArgument("o", ArgumentType::String, "Destination output folder", true));
     cliInput.addArgument(InputArgument("format", ArgumentType::String, "Image format to output to. (png, bmp, tga, jpg, hdr)", false, "png"));
     cliInput.addArgument(InputArgument("size", ArgumentType::Integer, "Resolution of generated cubemap images", false, "64"));
+    cliInput.addArgument(InputArgument("prefix", ArgumentType::String, "String prefix will be added to the filename. Default: empty string", false, ""));
+    cliInput.addArgument(InputArgument("alpha", ArgumentType::Boolean, "Load images in rgba format. Default: loading happens ignoring alpha channel", false, "false"));
 
     string commandLine;
     for (int i = 0; i < argc; i++) {
@@ -41,16 +42,23 @@ int main(int argc, char **argv) {
     const string input = arguments["i"].value.asString;
     const string output = arguments["o"].value.asString;
 
-
     if (FORMAT_LOOKUP.find(arguments["format"].value.asString) == FORMAT_LOOKUP.end()) {
         throw runtime_error("No such file format found. Available: png, bmp, tga, jpg, hdr");
     }
     const FileFormat format = FORMAT_LOOKUP.at(arguments["format"].value.asString);
     const int size = arguments["size"].value.asInteger;
+    const string prefix = arguments["prefix"].value.asString;
+    const bool alpha = arguments["alpha"].value.asBoolean;
 
-    const ShCoefficients<RGB> coefficients = readRgb(input);
-    auto cubemap = decode(coefficients, size);
-    write(output, format, cubemap);
+    if(alpha) {
+        const ShCoefficients<RGBA> coefficients = readRgba(input);
+        auto cubemap = decode<RGBA>(coefficients, size);
+        write(output, format, cubemap, prefix);
+    } else {
+        const ShCoefficients<RGB> coefficients = readRgb(input);
+        auto cubemap = decode(coefficients, size);
+        write(output, format, cubemap, prefix);
+    }
 
     return 0;
 }

@@ -57,7 +57,7 @@ namespace sh {
                 const regex attributesRegExpr(R"/(--?[a-zA-Z][a-zA-Z0-9-]*(?!\s+--?)(\s*=?(['"])[^'"]+\2))/");
                 const regex attributeRegExpr(R"/(--?([a-zA-Z][a-zA-Z0-9-]*)(?!\s+--?)(\s*=?(['"])([^'"]+)\3))/");
 
-                const regex flagsRegExpr(R"/(--?[a-zA-Z][a-zA-Z0-9-]*(?=\s+--?|$))/");
+                const regex flagsRegExpr(R"/(--?[a-zA-Z][a-zA-Z0-9-]*(?=\s+--?|\s*$))/");
                 const regex flagRegExpr(R"/(--?([a-zA-Z0-9-]+))/");
 
                 map<string, string> args;
