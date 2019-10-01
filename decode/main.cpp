@@ -52,11 +52,11 @@ int main(int argc, char **argv) {
 
     if(alpha) {
         const ShCoefficients<RGBA> coefficients = readRgba(input);
-        auto cubemap = decode<RGBA>(coefficients, size);
+        auto cubemap = decode<RGBA, RGBAF>(coefficients, size);
         write(output, format, cubemap, prefix);
     } else {
         const ShCoefficients<RGB> coefficients = readRgb(input);
-        auto cubemap = decode(coefficients, size);
+        auto cubemap = decode<RGB, RGBF>(coefficients, size);
         write(output, format, cubemap, prefix);
     }
 

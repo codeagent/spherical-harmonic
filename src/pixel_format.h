@@ -6,7 +6,8 @@
 #define SH_PIXEL_FORMAT_H
 
 #include <ostream>
-#include <inttypes.h>
+
+#include "real.h"
 
 namespace sh {
     template<class T>
@@ -18,6 +19,9 @@ namespace sh {
         RGBStruct() = default;
 
         RGBStruct(T v) : r(v), g(v), b(v) {}
+
+        template<class F>
+        RGBStruct(RGBStruct<F> v) : r((F)v.r), g((F)v.g), b((F)v.b) {}
 
         RGBStruct(T r, T g, T b) : r(r), g(g), b(b) {}
 
@@ -69,6 +73,9 @@ namespace sh {
 
         RGBAStruct() = default;
 
+        template<class F>
+        RGBAStruct(RGBAStruct<F> v) : r((F)v.r), g((F)v.g), b((F)v.b), a((F)v.a) {}
+
         RGBAStruct(T v) : r(v), g(v), b(v), a(v) {}
 
         RGBAStruct(T r, T g, T b, T a) : r(r), g(g), b(b), a(a) {}
@@ -112,7 +119,9 @@ namespace sh {
         return stream;
     }
 
-    using RGB = RGBStruct<float>;
-    using RGBA= RGBAStruct<float>;
+    using RGB = RGBStruct<real>;
+    using RGBA= RGBAStruct<real>;
+    using RGBF = RGBStruct<float>;
+    using RGBAF= RGBAStruct<float>;
 }
 #endif //SH_PIXEL_FORMAT_H

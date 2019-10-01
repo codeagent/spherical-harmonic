@@ -67,7 +67,7 @@ int main(int argc, char **argv) {
     const string pz = arguments["pz"].value.asString;
     const string nz = arguments["nz"].value.asString;
 
-    auto cubeMap = loadCubemapRgbFloat(px, nx, py, ny, pz, nz);
+    auto cubeMap = loadCubemapRgb(px, nx, py, ny, pz, nz);
     ShCoefficients<RGB> shCoefficients = encode<RGB>(cubeMap, (uint16_t) order, method, (uint16_t) samples, filtering);
 
     write(output, shCoefficients);

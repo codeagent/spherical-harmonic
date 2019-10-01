@@ -12,8 +12,7 @@
 #include <map>
 #include <cmath>
 
-#include <glm/gtc/matrix_transform.hpp>
-
+#include "real.h"
 #include "CubeMap.h"
 #include "sampling.h"
 #include "math.h"
@@ -21,24 +20,24 @@
 
 namespace sh {
 
-    template<class F>
-    using ShCoefficients = std::vector<F>;
+    template<class R>
+    using ShCoefficients = std::vector<R>;
 
-    template<class F>
-    uint16_t order(const ShCoefficients<F> &coefficients) {
-        return (uint16_t) (sqrt(coefficients.size()) - 1u);
+    template<class R>
+    uint16_t order(const ShCoefficients<R> &coefficients) {
+        return (uint16_t) (std::sqrt(coefficients.size()) - 1u);
     }
 
-    template<class T>
-    T estimateSpherical(const math::PolarFunction<T> &polarFunction, int l, int m, uint16_t divisions = 64) {
-        float dPhi = 2.0f * math::PI / divisions, dTetta = 2.0f * math::PI / divisions;
-        float phi = 0.0f, tetta;
-        T estimation(0.0f);
+    template<class R>
+    R estimateSpherical(const math::PolarFunction<R> &polarFunction, int l, int m, uint16_t divisions = 64) {
+        real dPhi = math::PI2 / divisions, dTetta = math::PI2 / divisions;
+        real phi = 0, tetta;
+        R estimation(0);
         for (int i = 0; i < divisions; i++) {
-            tetta = 0.0f;
+            tetta = 0;
             for (int j = 0; j < divisions / 2; j++) {
-                float y = math::y(l, m, phi, tetta);
-                estimation += polarFunction(phi, tetta) * y * sinf(tetta) * dPhi * dTetta;
+                real y = math::y(l, m, phi, tetta);
+                estimation += polarFunction(phi, tetta) * y * std::sin(tetta) * dPhi * dTetta;
                 tetta += dTetta;
             }
             phi += dPhi;
@@ -46,37 +45,36 @@ namespace sh {
         return estimation;
     }
 
-    template<class T>
-    T estimateMonteCarlo(const math::PolarFunction<T> &polarFunction, int l, int m, uint16_t samples = 512) {
-        const float factor = 4.0f * math::PI / samples;
-        T estimation(0.0f);
+    template<class R>
+    R estimateMonteCarlo(const math::PolarFunction<R> &polarFunction, int l, int m, uint16_t samples = 512) {
+        const real factor = math::PI4 / samples;
+        R estimation(0.0f);
         for (uint16_t i = 0; i < samples; i++) {
             auto e = math::hammersley2d(i, samples);
             auto angles = math::sampleSphere(e.x, e.y);
-            float y = math::y(l, m, angles.x, angles.y);
+            real y = math::y(l, m, angles.x, angles.y);
             estimation += polarFunction(angles.x, angles.y) * y;
         }
         return estimation * factor;
     }
 
-    float projectedArea(float s, float t) {
-        return std::atan2(s * t, std::sqrt(s * s + t * t + 1.0f));
+    real projectedArea(real s, real t) {
+        return std::atan2(s * t, std::sqrt(s * s + t * t + 1));
     }
 
-    float solidAngle(float s, float t, float ds, float dt) {
-        ds = ds * 0.5f;
-        dt = dt * 0.5f;
-        float C = projectedArea(s + ds, t + dt);
-        float A = projectedArea(s - ds, t - dt);
-        float B = projectedArea(s + ds, t - dt);
-        float D = projectedArea(s - ds, t + dt);
+    real solidAngle(real s, real t, real ds, real dt) {
+        ds = ds * 0.5;
+        dt = dt * 0.5;
+        real C = projectedArea(s + ds, t + dt);
+        real A = projectedArea(s - ds, t - dt);
+        real B = projectedArea(s + ds, t - dt);
+        real D = projectedArea(s - ds, t + dt);
         return A - B + C - D;
     }
 
-    template<class T>
-    T estimateCubeMap(const std::shared_ptr<CubeMap<T>> &cubemap, int l, int m) {
+    template<class R, class F>
+    R estimateCubeMap(const std::shared_ptr<CubeMap<F>> &cubemap, int l, int m) {
         using namespace std;
-        using namespace glm;
         using namespace math;
 
         const map<CubeMapFaceEnum, mat3> transformLookup = {
@@ -88,20 +86,20 @@ namespace sh {
                 {CubeMapFaceEnum::NegativeZ, mat3(-axis::x, axis::y, axis::z)}
         };
 
-        T estimation(0.0f);
+        R estimation(0);
         const int w = cubemap->getWidth(), h = cubemap->getHeight();
-        float dt = 2.0f / h, ds = 2.0f / w;
+        real dt = 2.0 / h, ds = 2.0 / w;
         for (auto &p: transformLookup) {
-            float s, t = -1.0f + dt * 0.5f;
+            real s, t = -1 + dt * 0.5;
             const auto transform = p.second;
             for (int i = 0; i < h; i++) {
-                s = -1.0f + ds * 0.5f;
+                s = -1 + ds * 0.5;
                 for (int j = 0; j < w; j++) {
-                    vec3 r = transform * normalize(vec3(s, t, -1.0f));
+                    vec3 r = transform * normalize(vec3(s, t, -1));
                     vec2 angles = math::cartesianToSpherical(r);
-                    T sample = sampleCubemap<T>(*cubemap, r, InterpolationMethod::Nearest);
-                    float dw = solidAngle(std::abs(s), std::abs(t), ds, dt);
-                    float y = math::y(l, m, angles.x, angles.y);
+                    R sample = R(sampleCubemap<F>(*cubemap, r, InterpolationMethod::Nearest));
+                    real dw = solidAngle(std::abs(s), std::abs(t), ds, dt);
+                    real y = math::y(l, m, angles.x, angles.y);
                     estimation += sample * y * dw;
                     s += ds;
                 }
@@ -111,33 +109,33 @@ namespace sh {
         return estimation;
     }
 
-    template<class F>
-    ShCoefficients<F> encode(const std::shared_ptr<CubeMap<F> > &cubeMap, uint16_t order, SamplingMethod method,
+    template<class R, class F>
+    ShCoefficients<R> encode(const std::shared_ptr<CubeMap<F>> &cubeMap, uint16_t order, SamplingMethod method,
             uint16_t samples, InterpolationMethod filtering) {
 
-        ShCoefficients<F> coefficients((order + 1u) * (order + 1u));
+        ShCoefficients<R> coefficients((order + 1u) * (order + 1u));
         if (method == SamplingMethod::MonteCarlo) {
-            CubeMapPolarFunction<F> polarFunction(cubeMap, filtering);
+            CubeMapPolarFunction<R, F> polarFunction(cubeMap, filtering);
             for (int l = 0; l <= order; l++) {
                 for (int m = -l; m <= l; m++) {
                     int index = l * (l + 1) + m;
-                    coefficients[index] = estimateMonteCarlo<F>(polarFunction, l, m, samples);
+                    coefficients[index] = estimateMonteCarlo<R>(polarFunction, l, m, samples);
                 }
             }
         } else if (method == SamplingMethod::Sphere) {
-            CubeMapPolarFunction<F> polarFunction(cubeMap, filtering);
-            const auto divisions = (uint16_t) sqrtf(2.0f * samples);
+            CubeMapPolarFunction<R, F> polarFunction(cubeMap, filtering);
+            const auto divisions = (uint16_t) std::sqrt(2.0 * samples);
             for (int l = 0; l <= order; l++) {
                 for (int m = -l; m <= l; m++) {
                     int index = l * (l + 1) + m;
-                    coefficients[index] = estimateSpherical<F>(polarFunction, l, m, divisions);
+                    coefficients[index] = estimateSpherical<R>(polarFunction, l, m, divisions);
                 }
             }
         } else {
             for (int l = 0; l <= order; l++) {
                 for (int m = -l; m <= l; m++) {
                     int index = l * (l + 1) + m;
-                    coefficients[index] = estimateCubeMap<F>(cubeMap, l, m);
+                    coefficients[index] = estimateCubeMap<R>(cubeMap, l, m);
                 }
             }
         }
@@ -153,14 +151,14 @@ namespace sh {
      * @param tetta
      * @return
      */
-    template<class F>
-    F decode(const ShCoefficients<F> &coefficients, float phi, float tetta) {
+    template<class R>
+    R decode(const ShCoefficients<R> &coefficients, real phi, real tetta) {
         const auto n = order(coefficients);
-        F decoded(0);
+        R decoded(0);
         for (int l = 0; l <= n; l++) {
             for (int m = -l; m <= l; m++) {
                 int index = l * (l + 1) + m;
-                F c = coefficients[index];
+                R c = coefficients[index];
                 decoded += c * math::y(l, m, phi, tetta);
             }
         }
@@ -174,8 +172,8 @@ namespace sh {
      * @param size
      * @return
      */
-    template<class F>
-    std::shared_ptr<CubeMap<F>> decode(const ShCoefficients<F> &coefficients, int size) {
+    template<class R, class F>
+    std::shared_ptr<CubeMap<F>> decode(const ShCoefficients<R> &coefficients, int size) {
         using namespace std;
         using namespace glm;
         using namespace math;
@@ -189,7 +187,7 @@ namespace sh {
                 {CubeMapFaceEnum::NegativeZ, mat3(-axis::x, axis::y, axis::z)}
         };
 
-        float dt = 2.0f / size, ds = 2.0f / size;
+        real dt = 2.0 / size, ds = 2.0 / size;
         map<CubeMapFaceEnum, shared_ptr<PixelArray<F>>> faces;
         for (auto &item : transformLookup) {
             const auto face = item.first;
@@ -197,14 +195,14 @@ namespace sh {
 
             auto bitmap = make_shared<PixelArray<F>>(new F[size * size], size, size);
 
-            float s, t = -1.0f + dt * 0.5f;
+            real s, t = -1 + dt * 0.5;
             for (int y = 0; y < size; y++) {
-                s = -1.0f + ds * 0.5f;
+                s = -1 + ds * 0.5;
                 for (int x = 0; x < size; x++) {
-                    vec3 r = transform * normalize(vec3(s, t, -1.0f));
+                    vec3 r = transform * normalize(vec3(s, t, -1));
                     vec2 angles = math::cartesianToSpherical(r);
-                    const auto v = decode<F>(coefficients, angles.x, angles.y);
-                    (*bitmap)[y][x] = v;
+                    const auto v = decode<R>(coefficients, angles.x, angles.y);
+                    (*bitmap)[y][x] = F(v);
                     s += ds;
                 }
                 t += dt;

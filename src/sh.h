@@ -5,6 +5,7 @@
 #ifndef SH_SH_H
 #define SH_SH_H
 
+#include "real.h"
 #include "utils.h"
 #include "sampling.h"
 #include "math.h"

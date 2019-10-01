@@ -33,26 +33,26 @@ namespace sh {
         Hdr
     };
 
-    shared_ptr<PixelArray<RGB>> loadPixelArrayRgb(const string &path) {
+    shared_ptr<PixelArray<RGBF>> loadPixelArrayRgb(const string &path) {
         int width, height, channels;
         float *data = stbi_loadf(path.c_str(), &width, &height, &channels, 3);
         if (!data) {
             throw std::runtime_error("Failed to load image '" + path + "' due to reason: " + stbi_failure_reason());
         }
-        return make_shared<PixelArray<RGB>>((RGB *) data, width, height);
+        return make_shared<PixelArray<RGBF>>((RGBF *) data, width, height);
     }
 
-    shared_ptr<PixelArray<RGBA>> loadPixelArrayRgba(const string &path) {
+    shared_ptr<PixelArray<RGBAF>> loadPixelArrayRgba(const string &path) {
         int width, height, channels;
         float *data = stbi_loadf(path.c_str(), &width, &height, &channels, 4);
         if (!data) {
             throw std::runtime_error("Failed to load image '" + path + "' due to reason: " + stbi_failure_reason());
         }
-        return make_shared<PixelArray<RGBA>>((RGBA *) data, width, height);
+        return make_shared<PixelArray<RGBAF>>((RGBAF *) data, width, height);
     }
 
 
-    shared_ptr<CubeMap<RGB>> loadCubemapRgbFloat(
+    shared_ptr<CubeMap<RGBF>> loadCubemapRgb(
             const string &px,
             const string &nx,
             const string &py,
@@ -67,10 +67,10 @@ namespace sh {
         const auto pzBmp = loadPixelArrayRgb(pz);
         const auto nzBmp = loadPixelArrayRgb(nz);
 
-        return make_shared<CubeMap<RGB>>(pxBmp, nxBmp, pyBmp, nyBmp, pzBmp, nzBmp);
+        return make_shared<CubeMap<RGBF>>(pxBmp, nxBmp, pyBmp, nyBmp, pzBmp, nzBmp);
     }
 
-    shared_ptr<CubeMap<RGBA>> loadCubemapRgbaFloat(
+    shared_ptr<CubeMap<RGBAF>> loadCubemapRgba(
             const string &px,
             const string &nx,
             const string &py,
@@ -85,7 +85,7 @@ namespace sh {
         const auto pzBmp = loadPixelArrayRgba(pz);
         const auto nzBmp = loadPixelArrayRgba(nz);
 
-        return make_shared<CubeMap<RGBA>>(pxBmp, nxBmp, pyBmp, nyBmp, pzBmp, nzBmp);
+        return make_shared<CubeMap<RGBAF>>(pxBmp, nxBmp, pyBmp, nyBmp, pzBmp, nzBmp);
     }
 
     std::ostream &operator<<(std::ostream &stream, const ShCoefficients<RGB> &h) {
@@ -172,7 +172,7 @@ namespace sh {
         f.close();
     }
 
-    inline stbi_uc *hdr2ldr(const PixelArray<RGB> &bitmap) {
+    inline stbi_uc *hdr2ldr(const PixelArray<RGBF> &bitmap) {
         const auto w = bitmap.getWidth(), h = bitmap.getHeight();
         const auto bytes = sizeof(RGB) * w * h;
         auto *data = (float *) STBI_MALLOC(bytes);
@@ -180,7 +180,7 @@ namespace sh {
         return stbi__hdr_to_ldr(data, w, h, 3);
     }
 
-    inline stbi_uc *hdr2ldr(const PixelArray<RGBA> &bitmap) {
+    inline stbi_uc *hdr2ldr(const PixelArray<RGBAF> &bitmap) {
         const auto w = bitmap.getWidth(), h = bitmap.getHeight();
         const auto bytes = sizeof(RGBA) * w * h;
         auto *data = (float *) STBI_MALLOC(bytes);
@@ -188,7 +188,7 @@ namespace sh {
         return stbi__hdr_to_ldr(data, w, h, 4);
     }
 
-    void write(const std::string &path, const FileFormat format, const std::shared_ptr<CubeMap<RGB>> &cubemap,
+    void write(const std::string &path, const FileFormat format, const std::shared_ptr<CubeMap<RGBF>> &cubemap,
             const std::string &prefix = "") {
         using namespace std;
 
@@ -244,7 +244,7 @@ namespace sh {
         }
     };
 
-    void write(const std::string &path, const FileFormat format, const std::shared_ptr<CubeMap<RGBA>> &cubemap,
+    void write(const std::string &path, const FileFormat format, const std::shared_ptr<CubeMap<RGBAF>> &cubemap,
             const std::string &prefix = "") {
         using namespace std;
         map<CubeMapFaceEnum, string> faceToNameLookup = {

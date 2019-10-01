@@ -9,23 +9,28 @@
 #include <functional>
 #include <glm/glm.hpp>
 
+#include "real.h"
+
 namespace sh {
     namespace math {
 
-        const float PI = 3.14159265358979f;
+        const real PI = (real)3.14159265358979;
+        const real SQRT2 = (real)1.41421356237309;
+        const real PI4 = 4 * PI;
+        const real PI2 = 2 * PI;
 
         template<class T>
-        using PolarFunction = std::function<T(float, float)>;
+        using PolarFunction = std::function<T(real, real)>;
 
         namespace axis {
-            const glm::vec3 x(1.0f, 0.0f, 0.0f);
-            const glm::vec3 y(0.0f, 1.0f, 0.0f);
-            const glm::vec3 z(0.0f, 0.0f, 1.0f);
+            const vec3 x(1, 0, 0);
+            const vec3 y(0, 1, 0);
+            const vec3 z(0, 0, 1);
         }
 
-        double fact(double a) {
-            if (a <= 1.0) {
-                return 1.0;
+        real fact(real a) {
+            if (a <= 1) {
+                return 1;
             }
             return a * fact(a - 1.0);
         }
@@ -36,9 +41,9 @@ namespace sh {
          * @param tetta
          * @return
          */
-        glm::vec3 sphericalToCartesian(float phi, float tetta) {
-            float sinTetta = sinf(tetta);
-            return glm::vec3(sinTetta * sinf(phi), cosf(tetta), sinTetta * cosf(phi));
+        vec3 sphericalToCartesian(real phi, real tetta) {
+            real sinTetta = std::sin(tetta);
+            return glm::vec3(sinTetta * std::sin(phi), std::cos(tetta), sinTetta * std::cos(phi));
         }
 
         /**
@@ -46,9 +51,9 @@ namespace sh {
         * @param p
         * @return
         */
-        glm::vec2 cartesianToSpherical(const glm::vec3 &p) {
-            return glm::vec2(atan2f(p.x, p.z), acosf(p.y));
-    }
+        vec2 cartesianToSpherical(const vec3 &p) {
+            return vec2(std::atan2(p.x, p.z), std::acos(p.y));
+        }
 
         /**
          * Evaluate an Associated Legendre Polynomial P(l,m,x) at x
@@ -57,23 +62,23 @@ namespace sh {
          * @param x
          * @return
          */
-        float P(int l, int m, float x) {
+        real P(int l, int m, real x) {
 
-            float pmm = 1.0f;
+            real pmm = 1;
             if (m > 0) {
-                float somx2 = sqrtf((1.0f - x) * (1.0f + x));
-                float fact = 1.0;
+                real somx2 = std::sqrt((1 - x) * (1 + x));
+                real fact = 1;
                 for (int i = 1; i <= m; i++) {
                     pmm *= (-fact) * somx2;
-                    fact += 2.0;
+                    fact += 2;
                 }
             }
             if (l == m) return pmm;
-            float pmmp1 = x * (2.0f * m + 1.0f) * pmm;
+            real pmmp1 = x * (2 * m + 1) * pmm;
             if (l == m + 1) return pmmp1;
-            float pll = 0.0;
+            real pll = 0.0;
             for (int ll = m + 2; ll <= l; ++ll) {
-                pll = ((2.0f * ll - 1.0f) * x * pmmp1 - (ll + m - 1.0f) * pmm) / (ll - m);
+                pll = ((2 * ll - 1) * x * pmmp1 - (ll + m - 1) * pmm) / (ll - m);
                 pmm = pmmp1;
                 pmmp1 = pll;
             }
@@ -87,9 +92,9 @@ namespace sh {
          * @param m
          * @return
          */
-        float K(int l, int m) {
-            float temp = ((2.0f * l + 1.0f) * fact(l - m)) / (4.0f * PI * fact(l + m));
-            return sqrtf(temp);
+        real K(int l, int m) {
+            real temp = ((2 * l + 1) * fact(l - m)) / (PI4 * fact(l + m));
+            return std::sqrt(temp);
         }
 
         /**
@@ -100,15 +105,19 @@ namespace sh {
          * @param tetta in the range [0..Pi]
          * @return
          */
-        float y(int l, int m, float phi, float tetta) {
-            const float sqrt2 = sqrtf(2.0f);
+        real y(int l, int m, real phi, real tetta) {
+            double result;
             if (m == 0) {
-                return K(l, 0) * P(l, m, cosf(tetta));
+                result = K(l, 0) * P(l, m, std::cos(tetta));
             } else if (m > 0) {
-                return sqrt2 * K(l, m) * cosf(m * phi) * P(l, m, cosf(tetta));
+                result = SQRT2 * K(l, m) * std::cos(m * phi) * P(l, m, std::cos(tetta));
             } else {
-                return sqrt2 * K(l, -m) * sinf(-m * phi) * P(l, -m, cosf(tetta));
+                result = SQRT2 * K(l, -m) * std::sin(-m * phi) * P(l, -m, std::cos(tetta));
             }
+            if(std::isnan(result)) {
+                return 0;
+            }
+            return result;
         }
 
         float radicalInverse_VdC(uint32_t bits) {
@@ -120,12 +129,12 @@ namespace sh {
             return float(bits) * 2.3283064365386963e-10f; // / 0x100000000
         }
 
-        glm::vec2 hammersley2d(uint16_t i, uint16_t N) {
-            return glm::vec2(float(i) / float(N), radicalInverse_VdC(i));
+        vec2 hammersley2d(uint16_t i, uint16_t N) {
+            return vec2(real(i) / real(N), radicalInverse_VdC(i));
         }
 
-        glm::vec2 sampleSphere(float ex, float ey) {
-            return glm::vec2(2.0f * math::PI * ey, 2.0 * acosf(sqrtf(1.0f - ex)));
+        vec2 sampleSphere(real ex, real ey) {
+            return vec2(PI2 * ey, 2 * std::acos(std::sqrt(1 - ex)));
         }
 
     }

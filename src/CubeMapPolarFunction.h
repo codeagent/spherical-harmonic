@@ -7,22 +7,23 @@
 
 #include <memory>
 
+#include "real.h"
 #include "math.h"
 #include "sampling.h"
 #include "CubeMap.h"
 
 namespace sh {
-    template<class T>
+    template<class R, class F>
     class CubeMapPolarFunction {
     protected:
-        std::shared_ptr<CubeMap<T>> cubemap;
+        std::shared_ptr<CubeMap<F>> cubemap;
         InterpolationMethod filtering;
     public:
-        CubeMapPolarFunction(std::shared_ptr<CubeMap<T>> cubemap, InterpolationMethod filtering) :
+        CubeMapPolarFunction(std::shared_ptr<CubeMap<F>> cubemap, InterpolationMethod filtering) :
                 cubemap(cubemap), filtering(filtering) {}
 
-        T operator()(float phi, float tetta) {
-            return sampleCubemap<T>(*cubemap, math::sphericalToCartesian(phi, tetta), filtering);
+        R operator()(real phi, real tetta) {
+            return R(sampleCubemap<F>(*cubemap, math::sphericalToCartesian(phi, tetta), filtering));
         }
     };
 }
