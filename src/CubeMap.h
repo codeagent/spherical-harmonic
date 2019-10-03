@@ -9,7 +9,7 @@
 #include <memory>
 
 #include "PixelArray.h"
-#include "math.h"
+#include "shmath.h"
 
 namespace sh {
 

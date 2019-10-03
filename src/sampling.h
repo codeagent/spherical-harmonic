@@ -14,7 +14,7 @@
 #include "pixel_format.h"
 #include "PixelArray.h"
 #include "CubeMap.h"
-#include "math.h"
+#include "shmath.h"
 
 namespace sh {
 

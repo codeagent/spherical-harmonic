@@ -8,7 +8,7 @@
 #include <memory>
 
 #include "real.h"
-#include "math.h"
+#include "shmath.h"
 #include "sampling.h"
 #include "CubeMap.h"
 

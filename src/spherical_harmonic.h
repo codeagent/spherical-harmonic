@@ -15,7 +15,7 @@
 #include "real.h"
 #include "CubeMap.h"
 #include "sampling.h"
-#include "math.h"
+#include "shmath.h"
 #include "CubeMapPolarFunction.h"
 
 namespace sh {

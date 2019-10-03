@@ -8,7 +8,7 @@
 #include "real.h"
 #include "utils.h"
 #include "sampling.h"
-#include "math.h"
+#include "shmath.h"
 #include "spherical_harmonic.h"
 #include "CubeMapPolarFunction.h"
 #include "CliInput.h"
