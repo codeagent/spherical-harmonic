@@ -7,7 +7,6 @@
 
 #include <cmath>
 #include <functional>
-#include <glm/glm.hpp>
 
 #include "real.h"
 
@@ -43,7 +42,7 @@ namespace sh {
          */
         vec3 sphericalToCartesian(real phi, real tetta) {
             real sinTetta = std::sin(tetta);
-            return glm::vec3(sinTetta * std::sin(phi), std::cos(tetta), sinTetta * std::cos(phi));
+            return vec3(sinTetta * std::sin(phi), std::cos(tetta), sinTetta * std::cos(phi));
         }
 
         /**
@@ -95,6 +94,11 @@ namespace sh {
         real K(int l, int m) {
             real temp = ((2 * l + 1) * fact(l - m)) / (PI4 * fact(l + m));
             return std::sqrt(temp);
+        }
+
+        template<class T>
+        bool equal(T a, T b , const T epsilon = std::numeric_limits<T>::epsilon()) {
+            return std::abs(b - a) < epsilon;
         }
 
         /**

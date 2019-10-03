@@ -34,6 +34,7 @@ namespace sh {
     };
 
     shared_ptr<PixelArray<RGBF>> loadPixelArrayRgb(const string &path) {
+        stbi_set_flip_vertically_on_load(1);
         int width, height, channels;
         float *data = stbi_loadf(path.c_str(), &width, &height, &channels, 3);
         if (!data) {
@@ -43,6 +44,7 @@ namespace sh {
     }
 
     shared_ptr<PixelArray<RGBAF>> loadPixelArrayRgba(const string &path) {
+        stbi_set_flip_vertically_on_load(1);
         int width, height, channels;
         float *data = stbi_loadf(path.c_str(), &width, &height, &channels, 4);
         if (!data) {
@@ -174,7 +176,7 @@ namespace sh {
 
     inline stbi_uc *hdr2ldr(const PixelArray<RGBF> &bitmap) {
         const auto w = bitmap.getWidth(), h = bitmap.getHeight();
-        const auto bytes = sizeof(RGB) * w * h;
+        const auto bytes = sizeof(RGBF) * w * h;
         auto *data = (float *) STBI_MALLOC(bytes);
         memcpy(data, bitmap.getData(), bytes);
         return stbi__hdr_to_ldr(data, w, h, 3);
@@ -182,7 +184,7 @@ namespace sh {
 
     inline stbi_uc *hdr2ldr(const PixelArray<RGBAF> &bitmap) {
         const auto w = bitmap.getWidth(), h = bitmap.getHeight();
-        const auto bytes = sizeof(RGBA) * w * h;
+        const auto bytes = sizeof(RGBAF) * w * h;
         auto *data = (float *) STBI_MALLOC(bytes);
         memcpy(data, bitmap.getData(), bytes);
         return stbi__hdr_to_ldr(data, w, h, 4);
@@ -192,6 +194,7 @@ namespace sh {
             const std::string &prefix = "") {
         using namespace std;
 
+        stbi_flip_vertically_on_write(1);
         map<CubeMapFaceEnum, string> faceToNameLookup = {
                 {CubeMapFaceEnum::PositiveX, "posx"s},
                 {CubeMapFaceEnum::NegativeX, "negx"s},
@@ -247,6 +250,7 @@ namespace sh {
     void write(const std::string &path, const FileFormat format, const std::shared_ptr<CubeMap<RGBAF>> &cubemap,
             const std::string &prefix = "") {
         using namespace std;
+        stbi_flip_vertically_on_write(1);
         map<CubeMapFaceEnum, string> faceToNameLookup = {
                 {CubeMapFaceEnum::PositiveX, "posx"s},
                 {CubeMapFaceEnum::NegativeX, "negx"s},

@@ -121,13 +121,14 @@ namespace sh {
     template<class T>
     T sampleCubemap(CubeMap <T> &cubemap, const vec3 &dir, InterpolationMethod filtering) {
 
+        using namespace math;
         // 1. find cubemap face
         // 2. project dir to face
         // 3. find 2d texture map pixel
         // 4. sample pixel using provided interpolation
 
         // 1.
-        vec3 r = normalize(dir);
+        vec3 r = glm::normalize(dir);
         real maximum = std::max(std::max(std::fabs(r.x), std::fabs(r.y)), std::fabs(r.z));
         real xx = r.x / maximum;
         real yy = r.y / maximum;
@@ -135,15 +136,15 @@ namespace sh {
 
 
         CubeMapFaceEnum face;
-        if (xx == 1.0) {
+        if (equal(xx, 1.0)) {
             face = CubeMapFaceEnum::PositiveX;
-        } else if (xx == -1.0) {
+        } else if (equal(xx, -1.0)) {
             face = CubeMapFaceEnum::NegativeX;
-        } else if (yy == 1.0) {
+        } else if (equal(yy, 1.0)) {
             face = CubeMapFaceEnum::PositiveY;
-        } else if (yy == -1.0) {
+        } else if (equal(yy, -1.0)) {
             face = CubeMapFaceEnum::NegativeY;
-        } else if (zz == 1.0) {
+        } else if (equal(zz, 1.0)) {
             face = CubeMapFaceEnum::PositiveZ;
         } else {
             face = CubeMapFaceEnum::NegativeZ;
