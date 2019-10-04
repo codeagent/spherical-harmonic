@@ -11,6 +11,9 @@
 #include <vector>
 #include <map>
 #include <regex>
+#include <sstream>
+#include <algorithm>
+#include <iomanip>
 
 namespace sh {
     namespace input {
@@ -31,8 +34,8 @@ namespace sh {
 
             InputArgument() = default;
             InputArgument(const std::string &name, ArgumentType type, const std::string &description = "",
-                          bool required = false,
-                          const std::string& defaultValue = "") :
+                    bool required = false,
+                    const std::string &defaultValue = "") :
                     name(name), type(type), defaultValue(defaultValue), description(description), required(required) {}
         };
 
@@ -50,8 +53,89 @@ namespace sh {
 
         class CliInput {
         protected:
-            std::vector <InputArgument> arguments;
+            std::vector<InputArgument> arguments;
         public:
+            std::string brief(const int padding = 8, const int perLine = 4) {
+                using namespace std;
+                ostringstream stream;
+                auto c = 1;
+                stream << setfill(' ');
+                for (auto &argument: this->arguments) {
+
+                    if (!argument.required) {
+                        stream << "[";
+                    }
+
+                    stream << "--" << argument.name;
+                    if (argument.type == ArgumentType::String) {
+                        stream << "=<string>";
+                    } else if (argument.type == ArgumentType::Integer || argument.type == ArgumentType::Float) {
+                        stream << "=<number>";
+                    }
+
+                    if (!argument.required) {
+                        stream << "]";
+                    }
+
+
+                    if (c % perLine == 0) {
+                        stream << endl;
+                        stream << setw(padding);
+                    } else {
+                        stream << " ";
+                    }
+                    c++;
+                }
+                stream << endl;
+                return stream.str();
+            }
+
+            std::string summary() {
+                using namespace std;
+                ostringstream stream;
+
+                const auto widest = std::max_element(arguments.begin(), arguments.end(), [](const InputArgument &a,
+                        const InputArgument &b) {
+                    return a.name.length() < b.name.length();
+                });
+
+                auto c = 0;
+                const auto alignment = 4;
+                const auto length = widest->name.length();
+                const auto padding = (uint32_t) (length % alignment == 0 ? length + alignment :
+                                                     (widest->name.length() / alignment + 1) * alignment);
+
+                stream << std::left << std::setfill(' ');
+                for (auto &argument: this->arguments) {
+                    stream << setw(padding) << argument.name << argument.description << endl;
+                    stream << setw(padding);
+                    if (argument.type == ArgumentType::String) {
+                        stream << ' ' << "Type: String";
+                    } else if (argument.type == ArgumentType::Integer) {
+                        stream << ' ' <<  "Type: Integer";
+                    } else if (argument.type == ArgumentType::Float) {
+                        stream << ' ' <<  "Type: Float";
+                    } else {
+                        stream << ' ' <<  "Type: Boolean";
+                    }
+                    stream << endl;
+                    if (!argument.defaultValue.empty()) {
+                        stream << setw(padding);
+                        stream << ' ' << "Default: " << argument.defaultValue;
+                        stream << endl;
+                    }
+
+                    if (argument.required) {
+                        stream << setw(padding);
+                        stream << ' ' << "Required";
+                        stream << endl;
+                    }
+                    stream << endl;
+                }
+
+                return stream.str();
+            }
+
             ArgumentMap parse(const std::string &commandArgs) {
                 using namespace std;
                 const regex attributesRegExpr(R"/(--?[a-zA-Z][a-zA-Z0-9-]*(?!\s+--?)(\s*=?(['"])[^'"]+\2))/");
@@ -90,7 +174,7 @@ namespace sh {
                 ArgumentMap argumentMap;
                 for (auto &a : arguments) {
                     if (a.required && args.find(a.name) == args.end()) {
-                        throw runtime_error("Input: argument '" + a.name + "' required");
+                        throw string("Input: argument '" + a.name + "' required");
                     }
                     const string strValue = args.find(a.name) != args.end() ? args[a.name] : a.defaultValue;
                     ArgumentValue argumentValue{};
