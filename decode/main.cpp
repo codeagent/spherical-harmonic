@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
         const string output = arguments["o"].value.asString;
 
         if (FORMAT_LOOKUP.find(arguments["format"].value.asString) == FORMAT_LOOKUP.end()) {
-            throw runtime_error("No such file format found. Available: png, bmp, tga, jpg, hdr");
+            throw string("No such file format found. Available: png, bmp, tga, jpg, hdr");
         }
         const FileFormat format = FORMAT_LOOKUP.at(arguments["format"].value.asString);
         const int size = arguments["size"].value.asInteger;

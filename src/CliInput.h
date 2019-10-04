@@ -61,23 +61,18 @@ namespace sh {
                 auto c = 1;
                 stream << setfill(' ');
                 for (auto &argument: this->arguments) {
-
                     if (!argument.required) {
                         stream << "[";
                     }
-
                     stream << "--" << argument.name;
                     if (argument.type == ArgumentType::String) {
                         stream << "=<string>";
                     } else if (argument.type == ArgumentType::Integer || argument.type == ArgumentType::Float) {
                         stream << "=<number>";
                     }
-
                     if (!argument.required) {
                         stream << "]";
                     }
-
-
                     if (c % perLine == 0) {
                         stream << endl;
                         stream << setw(padding);
@@ -124,7 +119,6 @@ namespace sh {
                         stream << ' ' << "Default: " << argument.defaultValue;
                         stream << endl;
                     }
-
                     if (argument.required) {
                         stream << setw(padding);
                         stream << ' ' << "Required";
